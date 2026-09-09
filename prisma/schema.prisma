@@ -1,0 +1,177 @@
+// Quotation module data model.
+// Reverse-engineered from a short screen recording of https://hyper-pos.eshopweb.store/admin/quotations
+// (live network access to that host was blocked in this environment — see QUOTATION_AUDIT.md "Unknown Behavior").
+
+generator client {
+  provider = "prisma-client"
+  output   = "../src/generated/prisma"
+}
+
+datasource db {
+  provider = "postgresql"
+}
+
+enum UserRole {
+  ADMINISTRATOR
+  CASHIER
+}
+
+enum QuotationStatus {
+  DRAFT
+  SENT
+  ACCEPTED
+  REJECTED
+  EXPIRED
+  CONVERTED
+}
+
+/// Percentage vs fixed-amount discount — the reference UI never showed a discount
+/// being entered, so this shape is an assumption. See QUOTATION_AUDIT.md.
+enum DiscountType {
+  PERCENT
+  FIXED
+}
+
+model Store {
+  id         String       @id @default(cuid())
+  name       String
+  code       String       @unique
+  isDefault  Boolean      @default(false)
+  createdAt  DateTime     @default(now())
+  updatedAt  DateTime     @updatedAt
+  quotations Quotation[]
+  users      User[]
+}
+
+model User {
+  id         String      @id @default(cuid())
+  name       String
+  email      String      @unique
+  role       UserRole    @default(CASHIER)
+  storeId    String?
+  store      Store?      @relation(fields: [storeId], references: [id])
+  createdAt  DateTime    @default(now())
+  quotations Quotation[]
+}
+
+model Customer {
+  id              String       @id @default(cuid())
+  code            String       @unique
+  name            String
+  email           String?
+  phone           String?
+  billingAddress  String?
+  shippingAddress String?
+  /// Standing discount applied automatically to quotations for this customer.
+  /// The reference UI shows a read-only "Discount" line in the totals panel
+  /// with the note "...using the selected store, customer discount, and
+  /// current tax rules" but never exposes a manual discount input — so this
+  /// is treated as customer-level data, not something typed on the form.
+  discountType    DiscountType @default(FIXED)
+  discountValue   Decimal      @default(0) @db.Decimal(12, 2)
+  createdAt       DateTime     @default(now())
+  updatedAt       DateTime     @updatedAt
+  quotations      Quotation[]
+
+  @@index([name])
+  @@index([phone])
+}
+
+model Tax {
+  id        String   @id @default(cuid())
+  name      String
+  rate      Decimal  @db.Decimal(6, 3) // percentage, e.g. 15.000 = 15%
+  isDefault Boolean  @default(false)
+  products  Product[]
+}
+
+model Product {
+  id            String          @id @default(cuid())
+  sku           String          @unique
+  barcode       String?         @unique
+  name          String
+  unit          String          @default("pcs")
+  price         Decimal         @db.Decimal(12, 2)
+  taxId         String?
+  tax           Tax?            @relation(fields: [taxId], references: [id])
+  createdAt     DateTime        @default(now())
+  updatedAt     DateTime        @updatedAt
+  quotationItems QuotationItem[]
+
+  @@index([name])
+}
+
+model Quotation {
+  id                    String          @id @default(cuid())
+  number                String          @unique // e.g. QT-000001
+
+  storeId               String
+  store                 Store           @relation(fields: [storeId], references: [id])
+
+  createdById           String
+  createdBy             User            @relation(fields: [createdById], references: [id])
+
+  // Either an existing Customer OR walk-in "prospect" details, never both.
+  customerId            String?
+  customer              Customer?       @relation(fields: [customerId], references: [id])
+  prospectName           String?
+  prospectEmail          String?
+  prospectPhone          String?
+
+  billingAddress        String?
+  shippingAddress       String?
+
+  issueDate             DateTime
+  validUntil            DateTime?
+  expectedDeliveryDate  DateTime?
+
+  termsAndConditions    String?
+  customerNotes         String?
+
+  status                QuotationStatus @default(DRAFT)
+
+  discountType          DiscountType    @default(FIXED)
+  discountValue         Decimal         @default(0) @db.Decimal(12, 2)
+
+  subtotal              Decimal         @default(0) @db.Decimal(12, 2)
+  discountTotal         Decimal         @default(0) @db.Decimal(12, 2)
+  taxTotal               Decimal         @default(0) @db.Decimal(12, 2)
+  total                 Decimal         @default(0) @db.Decimal(12, 2)
+
+  convertedSaleId       String?
+  convertedAt           DateTime?
+
+  createdAt             DateTime        @default(now())
+  updatedAt             DateTime        @updatedAt
+
+  items                 QuotationItem[]
+
+  @@index([status])
+  @@index([customerId])
+  @@index([issueDate])
+}
+
+model QuotationItem {
+  id            String       @id @default(cuid())
+  quotationId   String
+  quotation     Quotation    @relation(fields: [quotationId], references: [id], onDelete: Cascade)
+
+  productId     String
+  product       Product      @relation(fields: [productId], references: [id])
+
+  quantity      Decimal      @db.Decimal(12, 3)
+  unitPrice     Decimal      @db.Decimal(12, 2)
+
+  discountType  DiscountType @default(FIXED)
+  discountValue Decimal      @default(0) @db.Decimal(12, 2)
+
+  taxRate       Decimal      @default(0) @db.Decimal(6, 3)
+
+  subtotal      Decimal      @db.Decimal(12, 2) // quantity * unitPrice - lineDiscount
+  taxAmount     Decimal      @default(0) @db.Decimal(12, 2)
+  lineTotal     Decimal      @db.Decimal(12, 2) // subtotal + taxAmount
+
+  sortOrder     Int          @default(0)
+
+  @@index([quotationId])
+}
