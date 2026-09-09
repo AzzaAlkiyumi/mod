@@ -19,61 +19,64 @@ import {
   Truck,
 } from "lucide-react";
 
+import type { Dictionary } from "@/i18n/dictionaries/en";
+
 export interface NavItem {
-  label: string;
+  key: keyof Dictionary["nav"]["items"];
   href: string;
   icon: LucideIcon;
 }
 
 export interface NavGroup {
-  label: string;
+  key: keyof Dictionary["nav"]["groups"];
   items: NavItem[];
 }
 
 /** Mirrors the sidebar observed in the reference recording (hyper-pos.eshopweb.store/admin).
- * Every item here was actually seen in a frame — see QUOTATION_AUDIT.md. */
+ * Every item here was actually seen in a frame — see QUOTATION_AUDIT.md. Labels are
+ * translation keys resolved against src/i18n/dictionaries at render time. */
 export const NAV_GROUPS: NavGroup[] = [
   {
-    label: "Operations",
+    key: "operations",
     items: [
-      { label: "Dashboard", href: "/admin/dashboard", icon: LayoutGrid },
-      { label: "POS", href: "/admin/pos", icon: Monitor },
-      { label: "Shift History", href: "/admin/shift-history", icon: Clock },
-      { label: "Cash Mismatch Reasons", href: "/admin/cash-mismatch-reasons", icon: Scale },
+      { key: "dashboard", href: "/admin/dashboard", icon: LayoutGrid },
+      { key: "pos", href: "/admin/pos", icon: Monitor },
+      { key: "shiftHistory", href: "/admin/shift-history", icon: Clock },
+      { key: "cashMismatchReasons", href: "/admin/cash-mismatch-reasons", icon: Scale },
     ],
   },
   {
-    label: "Sales",
+    key: "sales",
     items: [
-      { label: "Sales History", href: "/admin/sales-history", icon: ClipboardList },
-      { label: "New sale", href: "/admin/sales/new", icon: Plus },
-      { label: "Quotations", href: "/admin/quotations", icon: FileText },
-      { label: "Kiosk orders", href: "/admin/kiosk-orders", icon: Tablet },
-      { label: "Channel orders", href: "/admin/channel-orders", icon: ExternalLink },
-      { label: "Customer payments", href: "/admin/customer-payments", icon: Wallet },
-      { label: "Return reasons", href: "/admin/return-reasons", icon: RotateCcw },
+      { key: "salesHistory", href: "/admin/sales-history", icon: ClipboardList },
+      { key: "newSale", href: "/admin/sales/new", icon: Plus },
+      { key: "quotations", href: "/admin/quotations", icon: FileText },
+      { key: "kioskOrders", href: "/admin/kiosk-orders", icon: Tablet },
+      { key: "channelOrders", href: "/admin/channel-orders", icon: ExternalLink },
+      { key: "customerPayments", href: "/admin/customer-payments", icon: Wallet },
+      { key: "returnReasons", href: "/admin/return-reasons", icon: RotateCcw },
     ],
   },
   {
-    label: "Customers",
+    key: "customers",
     items: [
-      { label: "Customers", href: "/admin/customers", icon: Users },
-      { label: "Customer groups", href: "/admin/customer-groups", icon: LayoutList },
+      { key: "customers", href: "/admin/customers", icon: Users },
+      { key: "customerGroups", href: "/admin/customer-groups", icon: LayoutList },
     ],
   },
   {
-    label: "Products",
+    key: "products",
     items: [
-      { label: "Products", href: "/admin/products", icon: Package },
-      { label: "Print labels", href: "/admin/print-labels", icon: Tags },
+      { key: "products", href: "/admin/products", icon: Package },
+      { key: "printLabels", href: "/admin/print-labels", icon: Tags },
     ],
   },
   {
-    label: "Inventory",
-    items: [{ label: "Inventory reports", href: "/admin/inventory-reports", icon: BarChart3 }],
+    key: "inventory",
+    items: [{ key: "inventoryReports", href: "/admin/inventory-reports", icon: BarChart3 }],
   },
   {
-    label: "Supply",
-    items: [{ label: "Suppliers", href: "/admin/suppliers", icon: Truck }],
+    key: "supply",
+    items: [{ key: "suppliers", href: "/admin/suppliers", icon: Truck }],
   },
 ];

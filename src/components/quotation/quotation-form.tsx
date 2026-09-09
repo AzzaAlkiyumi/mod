@@ -22,6 +22,7 @@ import { CustomerSelector, type CustomerOption } from "@/components/quotation/cu
 import { QuotationItems } from "@/components/quotation/quotation-items";
 import type { DraftItem } from "@/components/quotation/quotation-item-row";
 import { QuotationSummary } from "@/components/quotation/quotation-summary";
+import { useDictionary } from "@/i18n/dictionary-context";
 import type { ProductWithTax } from "@/lib/types";
 
 const DIAL_CODES = [
@@ -68,6 +69,7 @@ function splitPhone(phone: string | null | undefined) {
 
 export function QuotationForm({ initial }: { initial?: QuotationFormInitialData }) {
   const router = useRouter();
+  const { t } = useDictionary();
   const isEdit = Boolean(initial);
 
   const [stores, setStores] = useState<StoreOption[]>([]);
@@ -149,7 +151,7 @@ export function QuotationForm({ initial }: { initial?: QuotationFormInitialData 
 
   function handleAddProduct(product: ProductWithTax) {
     if (items.some((i) => i.productId === product.id)) {
-      toast.error(`${product.name} is already on this quotation — adjust the quantity instead`);
+      toast.error(t.form.items.duplicateToast(product.name));
       return;
     }
     setItems((prev) => [
@@ -171,36 +173,36 @@ export function QuotationForm({ initial }: { initial?: QuotationFormInitialData 
   const itemErrors = useMemo(() => {
     const out: Record<string, string> = {};
     for (const item of items) {
-      if (!(item.quantity > 0)) out[item.productId] = "Quantity must be greater than 0";
+      if (!(item.quantity > 0)) out[item.productId] = t.form.errors.quantityPositive;
       else if (item.discountType === "PERCENT" && (item.discountValue < 0 || item.discountValue > 100)) {
-        out[item.productId] = "Percentage discount must be between 0 and 100";
+        out[item.productId] = t.form.errors.discountPercentRange;
       } else if (item.discountValue < 0) {
-        out[item.productId] = "Discount cannot be negative";
+        out[item.productId] = t.form.errors.discountNegative;
       }
     }
     return out;
-  }, [items]);
+  }, [items, t]);
 
   async function handleSave() {
     const fieldErrors: Record<string, string> = {};
-    if (!storeId) fieldErrors.storeId = "Store is required";
-    if (!issueDate) fieldErrors.issueDate = "Issue date is required";
+    if (!storeId) fieldErrors.storeId = t.form.errors.storeRequired;
+    if (!issueDate) fieldErrors.issueDate = t.form.errors.issueDateRequired;
     if (!customer && !prospectName.trim()) {
-      fieldErrors.prospectName = "Select an existing customer or enter a prospect name";
+      fieldErrors.prospectName = t.form.errors.prospectOrCustomerRequired;
     }
     if (validUntil && issueDate && validUntil < issueDate) {
-      fieldErrors.validUntil = "Valid until must be on or after the issue date";
+      fieldErrors.validUntil = t.form.errors.validUntilBeforeIssue;
     }
     if (items.length === 0) {
-      fieldErrors.items = "Add at least one product to prepare the quotation";
+      fieldErrors.items = t.form.errors.itemsRequired;
     }
     if (Object.keys(itemErrors).length > 0) {
-      fieldErrors.items = "Fix the highlighted items before saving";
+      fieldErrors.items = t.form.errors.itemsHaveErrors;
     }
 
     setErrors(fieldErrors);
     if (Object.keys(fieldErrors).length > 0) {
-      toast.error("Please fix the highlighted fields");
+      toast.error(t.form.errors.fixHighlighted);
       return;
     }
 
@@ -240,14 +242,16 @@ export function QuotationForm({ initial }: { initial?: QuotationFormInitialData 
           (json?.error?.fieldErrors ?? {}) as Record<string, string[]>,
         )[0];
         const message =
-          json?.error?.formErrors?.[0] ?? fieldErrorList?.[0] ?? "Failed to save quotation";
+          json?.error?.formErrors?.[0] ?? fieldErrorList?.[0] ?? t.form.errors.saveFailed;
         throw new Error(message);
       }
-      toast.success(isEdit ? "Quotation updated" : `${json.data.number} saved as draft`);
+      toast.success(
+        isEdit ? t.form.toasts.updated : t.form.toasts.savedAsDraft(json.data.number),
+      );
       router.push(`/admin/quotations/${json.data.id}`);
       router.refresh();
     } catch (err) {
-      toast.error(err instanceof Error ? err.message : "Failed to save quotation");
+      toast.error(err instanceof Error ? err.message : t.form.errors.saveFailed);
     } finally {
       setSaving(false);
     }
@@ -260,29 +264,29 @@ export function QuotationForm({ initial }: { initial?: QuotationFormInitialData 
           <Link
             href="/admin/quotations"
             className="mt-1 flex size-8 items-center justify-center rounded-md text-muted-foreground hover:bg-accent"
-            aria-label="Back to quotations"
+            aria-label={t.common.backToQuotations}
           >
-            <ArrowLeft className="size-4" />
+            <ArrowLeft className="size-4 rtl:-scale-x-100" />
           </Link>
           <div>
             <h1 className="text-2xl font-semibold tracking-tight">
-              {isEdit ? `Edit ${initial!.number}` : "New quotation"}
+              {isEdit ? t.form.editTitle(initial!.number) : t.form.newTitle}
             </h1>
             <p className="mt-1 text-sm text-muted-foreground">
-              {isEdit
-                ? "Update customer, items, or delivery details for this quotation."
-                : "Build a formal offer using the same product pricing and tax rules as a sale."}
+              {isEdit ? t.form.editSubtitle : t.form.newSubtitle}
             </p>
           </div>
         </div>
         <div className="flex shrink-0 gap-2">
           <Button variant="ghost" asChild>
-            <Link href="/admin/quotations">Discard</Link>
+            <Link href="/admin/quotations">{t.common.discard}</Link>
           </Button>
           <Button onClick={handleSave} disabled={saving}>
-            {saving ? "Saving…" : (
+            {saving ? (
+              t.form.saving
+            ) : (
               <>
-                <Check /> Save draft
+                <Check /> {t.form.saveDraft}
               </>
             )}
           </Button>
@@ -291,24 +295,22 @@ export function QuotationForm({ initial }: { initial?: QuotationFormInitialData 
 
       <div className="flex items-start gap-3 rounded-lg border border-info/20 bg-info/5 p-4 text-sm text-info">
         <Info className="mt-0.5 size-4 shrink-0" />
-        <p>A quotation does not reserve or deduct stock. Availability is checked when it is converted to a sale.</p>
+        <p>{t.form.infoBanner}</p>
       </div>
 
       <div className="grid gap-6 lg:grid-cols-3">
         <div className="flex flex-col gap-6 lg:col-span-2">
           <Card>
             <CardHeader>
-              <CardTitle>Quotation details</CardTitle>
-              <CardDescription>
-                Store, customer or prospect, document dates, and delivery addresses.
-              </CardDescription>
+              <CardTitle>{t.form.details.title}</CardTitle>
+              <CardDescription>{t.form.details.subtitle}</CardDescription>
             </CardHeader>
             <CardContent className="grid gap-4 sm:grid-cols-2 lg:grid-cols-4">
               <div className="flex flex-col gap-1.5">
-                <Label htmlFor="storeId">Store *</Label>
+                <Label htmlFor="storeId">{t.form.details.store}</Label>
                 <Select value={storeId} onValueChange={setStoreId}>
                   <SelectTrigger id="storeId" aria-invalid={Boolean(errors.storeId)}>
-                    <SelectValue placeholder="Select a store" />
+                    <SelectValue placeholder={t.form.details.selectStore} />
                   </SelectTrigger>
                   <SelectContent>
                     {stores.map((s) => (
@@ -322,12 +324,12 @@ export function QuotationForm({ initial }: { initial?: QuotationFormInitialData 
               </div>
 
               <div className="flex flex-col gap-1.5">
-                <Label>Existing customer</Label>
+                <Label>{t.form.details.existingCustomer}</Label>
                 <CustomerSelector value={customer} onChange={handleSelectCustomer} />
               </div>
 
               <div className="flex flex-col gap-1.5">
-                <Label htmlFor="issueDate">Issue date *</Label>
+                <Label htmlFor="issueDate">{t.form.details.issueDate}</Label>
                 <Input
                   id="issueDate"
                   type="date"
@@ -339,7 +341,7 @@ export function QuotationForm({ initial }: { initial?: QuotationFormInitialData 
               </div>
 
               <div className="flex flex-col gap-1.5">
-                <Label htmlFor="validUntil">Valid until</Label>
+                <Label htmlFor="validUntil">{t.form.details.validUntil}</Label>
                 <Input
                   id="validUntil"
                   type="date"
@@ -355,7 +357,7 @@ export function QuotationForm({ initial }: { initial?: QuotationFormInitialData 
               {!customer && (
                 <>
                   <div className="flex flex-col gap-1.5">
-                    <Label htmlFor="prospectName">Prospect name *</Label>
+                    <Label htmlFor="prospectName">{t.form.details.prospectName}</Label>
                     <Input
                       id="prospectName"
                       value={prospectName}
@@ -367,7 +369,7 @@ export function QuotationForm({ initial }: { initial?: QuotationFormInitialData 
                     )}
                   </div>
                   <div className="flex flex-col gap-1.5">
-                    <Label htmlFor="prospectEmail">Email</Label>
+                    <Label htmlFor="prospectEmail">{t.form.details.email}</Label>
                     <Input
                       id="prospectEmail"
                       type="email"
@@ -376,10 +378,13 @@ export function QuotationForm({ initial }: { initial?: QuotationFormInitialData 
                     />
                   </div>
                   <div className="flex flex-col gap-1.5">
-                    <Label htmlFor="prospectPhone">Phone</Label>
+                    <Label htmlFor="prospectPhone">{t.form.details.phone}</Label>
                     <div className="flex gap-1.5">
                       <Select value={dialCode} onValueChange={setDialCode}>
-                        <SelectTrigger className="w-20 shrink-0 px-2" aria-label="Country code">
+                        <SelectTrigger
+                          className="w-20 shrink-0 px-2"
+                          aria-label={t.form.details.countryCode}
+                        >
                           <SelectValue />
                         </SelectTrigger>
                         <SelectContent>
@@ -402,7 +407,7 @@ export function QuotationForm({ initial }: { initial?: QuotationFormInitialData 
               )}
 
               <div className="flex flex-col gap-1.5 sm:col-span-2">
-                <Label htmlFor="billingAddress">Billing address</Label>
+                <Label htmlFor="billingAddress">{t.form.details.billingAddress}</Label>
                 <Textarea
                   id="billingAddress"
                   rows={3}
@@ -411,7 +416,7 @@ export function QuotationForm({ initial }: { initial?: QuotationFormInitialData 
                 />
               </div>
               <div className="flex flex-col gap-1.5 sm:col-span-2">
-                <Label htmlFor="shippingAddress">Shipping address</Label>
+                <Label htmlFor="shippingAddress">{t.form.details.shippingAddress}</Label>
                 <Textarea
                   id="shippingAddress"
                   rows={3}
@@ -435,12 +440,14 @@ export function QuotationForm({ initial }: { initial?: QuotationFormInitialData 
 
           <Card>
             <CardHeader>
-              <CardTitle>Delivery, terms, and notes</CardTitle>
-              <CardDescription>Customer-facing conditions plus private staff notes.</CardDescription>
+              <CardTitle>{t.form.delivery.title}</CardTitle>
+              <CardDescription>{t.form.delivery.subtitle}</CardDescription>
             </CardHeader>
             <CardContent className="flex flex-col gap-4">
               <div className="flex flex-col gap-1.5 sm:w-64">
-                <Label htmlFor="expectedDeliveryDate">Expected delivery date</Label>
+                <Label htmlFor="expectedDeliveryDate">
+                  {t.form.delivery.expectedDeliveryDate}
+                </Label>
                 <Input
                   id="expectedDeliveryDate"
                   type="date"
@@ -449,7 +456,7 @@ export function QuotationForm({ initial }: { initial?: QuotationFormInitialData 
                 />
               </div>
               <div className="flex flex-col gap-1.5">
-                <Label htmlFor="termsAndConditions">Terms and conditions</Label>
+                <Label htmlFor="termsAndConditions">{t.form.delivery.termsAndConditions}</Label>
                 <Textarea
                   id="termsAndConditions"
                   rows={4}
@@ -458,7 +465,7 @@ export function QuotationForm({ initial }: { initial?: QuotationFormInitialData 
                 />
               </div>
               <div className="flex flex-col gap-1.5">
-                <Label htmlFor="customerNotes">Customer notes</Label>
+                <Label htmlFor="customerNotes">{t.form.delivery.customerNotes}</Label>
                 <Textarea
                   id="customerNotes"
                   rows={3}

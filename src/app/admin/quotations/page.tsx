@@ -8,6 +8,8 @@ import { Card } from "@/components/ui/card";
 import { QuotationFilters } from "@/components/quotation/quotation-filters";
 import { QuotationTable } from "@/components/quotation/quotation-table";
 import { quotationStatusSchema } from "@/lib/validations/quotation";
+import { getLocale } from "@/i18n/get-locale";
+import { getDictionary } from "@/i18n/get-dictionary";
 
 export const dynamic = "force-dynamic";
 
@@ -16,6 +18,7 @@ interface PageProps {
 }
 
 export default async function QuotationsPage({ searchParams }: PageProps) {
+  const t = getDictionary(await getLocale());
   const params = await searchParams;
   const status = typeof params.status === "string" ? params.status : undefined;
   const from = typeof params.from === "string" ? params.from : undefined;
@@ -52,31 +55,29 @@ export default async function QuotationsPage({ searchParams }: PageProps) {
     <div className="flex flex-col gap-6">
       <div className="flex flex-col gap-4 sm:flex-row sm:items-start sm:justify-between">
         <div>
-          <h1 className="text-2xl font-semibold tracking-tight">Quotations</h1>
-          <p className="mt-1 text-sm text-muted-foreground">
-            Prepare, share, revise, and convert customer quotations without changing stock.
-          </p>
+          <h1 className="text-2xl font-semibold tracking-tight">{t.list.title}</h1>
+          <p className="mt-1 text-sm text-muted-foreground">{t.list.subtitle}</p>
         </div>
         <Button asChild>
           <Link href="/admin/quotations/new">
-            <Plus /> New quotation
+            <Plus /> {t.list.newQuotation}
           </Link>
         </Button>
       </div>
 
       <Card className="overflow-hidden py-0">
         <div className="flex items-center justify-between px-4 pt-4">
-          <h2 className="text-sm font-semibold">Quotations ({quotations.length})</h2>
+          <h2 className="text-sm font-semibold">{t.list.countLabel(quotations.length)}</h2>
           <Link
             href="/admin/quotations"
             className="flex size-8 items-center justify-center rounded-md text-muted-foreground hover:bg-accent hover:text-accent-foreground"
-            aria-label="Refresh"
+            aria-label={t.list.refresh}
           >
             <RefreshCcw className="size-4" />
           </Link>
         </div>
         <QuotationFilters />
-        <QuotationTable quotations={quotations} />
+        <QuotationTable quotations={quotations} t={t} />
       </Card>
     </div>
   );

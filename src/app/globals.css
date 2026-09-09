@@ -139,6 +139,11 @@
     @apply bg-background text-foreground;
     font-feature-settings: "cv11", "ss01";
   }
+  /* Arabic content uses Noto Sans Arabic first; Latin text (numbers, SKUs, $ amounts)
+     inside an RTL page still falls through to the Latin UI font. */
+  :dir(rtl) body {
+    font-family: var(--font-arabic), var(--font-sans);
+  }
 }
 
 @media print {

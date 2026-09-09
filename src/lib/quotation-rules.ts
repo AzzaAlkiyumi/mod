@@ -21,6 +21,9 @@ export const QUOTATION_STATUSES: QuotationStatus[] = [
   "CONVERTED",
 ];
 
+/** English fallback labels, used only for API error messages and other non-UI text.
+ * UI components should read the translated label from `dict.status[status]` instead
+ * (see src/i18n/dictionaries) so status names follow the active language. */
 export const STATUS_LABELS: Record<QuotationStatus, string> = {
   DRAFT: "Draft",
   SENT: "Sent",

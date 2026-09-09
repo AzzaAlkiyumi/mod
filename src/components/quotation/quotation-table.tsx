@@ -12,16 +12,23 @@ import { QuotationStatusBadge } from "@/components/quotation/quotation-status-ba
 import { QuotationRowActions } from "@/components/quotation/quotation-row-actions";
 import { formatCurrency, formatDate } from "@/lib/utils";
 import type { QuotationListItem } from "@/lib/types";
+import type { Dictionary } from "@/i18n/dictionaries/en";
 
-export function QuotationTable({ quotations }: { quotations: QuotationListItem[] }) {
+export function QuotationTable({
+  quotations,
+  t,
+}: {
+  quotations: QuotationListItem[];
+  t: Dictionary;
+}) {
   if (quotations.length === 0) {
     return (
       <div className="flex flex-col items-center justify-center gap-3 py-20 text-center">
         <div className="flex size-12 items-center justify-center rounded-full bg-muted">
           <FileText className="size-5 text-muted-foreground" />
         </div>
-        <p className="font-medium">No quotations found</p>
-        <p className="text-sm text-muted-foreground">Create a quotation or change the filters.</p>
+        <p className="font-medium">{t.list.empty.title}</p>
+        <p className="text-sm text-muted-foreground">{t.list.empty.subtitle}</p>
       </div>
     );
   }
@@ -30,13 +37,13 @@ export function QuotationTable({ quotations }: { quotations: QuotationListItem[]
     <Table>
       <TableHeader>
         <TableRow>
-          <TableHead>Number</TableHead>
-          <TableHead>Customer</TableHead>
-          <TableHead>Issue date</TableHead>
-          <TableHead>Valid until</TableHead>
-          <TableHead>Items</TableHead>
-          <TableHead>Status</TableHead>
-          <TableHead className="text-right">Total</TableHead>
+          <TableHead>{t.list.columns.number}</TableHead>
+          <TableHead>{t.list.columns.customer}</TableHead>
+          <TableHead>{t.list.columns.issueDate}</TableHead>
+          <TableHead>{t.list.columns.validUntil}</TableHead>
+          <TableHead>{t.list.columns.items}</TableHead>
+          <TableHead>{t.list.columns.status}</TableHead>
+          <TableHead className="text-end">{t.list.columns.total}</TableHead>
           <TableHead className="w-10" />
         </TableRow>
       </TableHeader>
@@ -67,7 +74,7 @@ export function QuotationTable({ quotations }: { quotations: QuotationListItem[]
             <TableCell>
               <QuotationStatusBadge status={quotation.status} />
             </TableCell>
-            <TableCell className="text-right font-medium">
+            <TableCell className="text-end font-medium">
               {formatCurrency(quotation.total)}
             </TableCell>
             <TableCell>

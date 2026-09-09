@@ -4,6 +4,7 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/com
 import { Table, TableBody, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { ProductSelector } from "@/components/quotation/product-selector";
 import { QuotationItemRow, type DraftItem } from "@/components/quotation/quotation-item-row";
+import { useDictionary } from "@/i18n/dictionary-context";
 import type { ProductWithTax } from "@/lib/types";
 
 export function QuotationItems({
@@ -21,11 +22,13 @@ export function QuotationItems({
   onChange: (index: number, next: DraftItem) => void;
   onRemove: (index: number) => void;
 }) {
+  const { t } = useDictionary();
+
   return (
     <Card>
       <CardHeader>
-        <CardTitle>Items</CardTitle>
-        <CardDescription>Add catalog products and variants. Prices and taxes resolve automatically.</CardDescription>
+        <CardTitle>{t.form.items.title}</CardTitle>
+        <CardDescription>{t.form.items.subtitle}</CardDescription>
       </CardHeader>
       <CardContent className="flex flex-col gap-4">
         <ProductSelector
@@ -36,19 +39,17 @@ export function QuotationItems({
         {formError && <p className="text-sm text-destructive">{formError}</p>}
 
         {items.length === 0 ? (
-          <p className="text-sm text-muted-foreground">
-            Add at least one product to prepare the quotation.
-          </p>
+          <p className="text-sm text-muted-foreground">{t.form.items.emptyHint}</p>
         ) : (
           <div className="rounded-md border border-border">
             <Table>
               <TableHeader>
                 <TableRow>
-                  <TableHead>Product</TableHead>
-                  <TableHead className="w-24">Qty</TableHead>
-                  <TableHead className="w-40">Discount</TableHead>
-                  <TableHead className="text-right">Tax</TableHead>
-                  <TableHead className="text-right">Line total</TableHead>
+                  <TableHead>{t.form.items.columns.product}</TableHead>
+                  <TableHead className="w-24">{t.form.items.columns.qty}</TableHead>
+                  <TableHead className="w-40">{t.form.items.columns.discount}</TableHead>
+                  <TableHead className="text-end">{t.form.items.columns.tax}</TableHead>
+                  <TableHead className="text-end">{t.form.items.columns.lineTotal}</TableHead>
                   <TableHead className="w-10" />
                 </TableRow>
               </TableHeader>

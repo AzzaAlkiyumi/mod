@@ -13,6 +13,7 @@ import {
   SelectValue,
 } from "@/components/ui/select";
 import { formatCurrency } from "@/lib/utils";
+import { useDictionary } from "@/i18n/dictionary-context";
 import type { DiscountType } from "@/lib/calculations";
 
 export interface DraftItem {
@@ -47,6 +48,7 @@ export function QuotationItemRow({
   onChange: (next: DraftItem) => void;
   onRemove: () => void;
 }) {
+  const { t } = useDictionary();
   const preview = computeLinePreview(item);
 
   return (
@@ -66,9 +68,9 @@ export function QuotationItemRow({
           min={0}
           step="any"
           value={item.quantity}
-          aria-label={`Quantity for ${item.name}`}
+          aria-label={t.form.items.quantityFor(item.name)}
           onChange={(e) => onChange({ ...item, quantity: Number(e.target.value) })}
-          className="text-right"
+          className="text-end"
         />
       </TableCell>
       <TableCell className="w-40">
@@ -78,15 +80,18 @@ export function QuotationItemRow({
             min={0}
             step="any"
             value={item.discountValue}
-            aria-label={`Discount for ${item.name}`}
+            aria-label={t.form.items.discountFor(item.name)}
             onChange={(e) => onChange({ ...item, discountValue: Number(e.target.value) })}
-            className="text-right"
+            className="text-end"
           />
           <Select
             value={item.discountType}
             onValueChange={(v) => onChange({ ...item, discountType: v as DiscountType })}
           >
-            <SelectTrigger className="w-16 shrink-0" aria-label={`Discount type for ${item.name}`}>
+            <SelectTrigger
+              className="w-16 shrink-0"
+              aria-label={t.form.items.discountTypeFor(item.name)}
+            >
               <SelectValue />
             </SelectTrigger>
             <SelectContent>
@@ -96,16 +101,16 @@ export function QuotationItemRow({
           </Select>
         </div>
       </TableCell>
-      <TableCell className="text-right text-muted-foreground">
+      <TableCell className="text-end text-muted-foreground">
         {item.taxRate > 0 ? `${item.taxRate}%` : "—"}
       </TableCell>
-      <TableCell className="text-right font-medium">{formatCurrency(preview.total)}</TableCell>
+      <TableCell className="text-end font-medium">{formatCurrency(preview.total)}</TableCell>
       <TableCell>
         <Button
           type="button"
           variant="ghost"
           size="icon"
-          aria-label={`Remove ${item.name}`}
+          aria-label={t.form.items.remove(item.name)}
           onClick={onRemove}
         >
           <Trash2 className="text-destructive" />

@@ -14,6 +14,7 @@ import {
 import { Popover, PopoverContent, PopoverAnchor } from "@/components/ui/popover";
 import { Input } from "@/components/ui/input";
 import { formatCurrency } from "@/lib/utils";
+import { useDictionary } from "@/i18n/dictionary-context";
 import type { ProductWithTax } from "@/lib/types";
 
 export function ProductSelector({
@@ -23,6 +24,7 @@ export function ProductSelector({
   onSelect: (product: ProductWithTax) => void;
   excludeIds: string[];
 }) {
+  const { t } = useDictionary();
   const [query, setQuery] = useState("");
   const [barcode, setBarcode] = useState("");
   const [open, setOpen] = useState(false);
@@ -50,13 +52,13 @@ export function ProductSelector({
     const exact = products.find((p) => p.barcode === barcode.trim() || p.sku === barcode.trim());
     if (exact) {
       if (excludeIds.includes(exact.id)) {
-        toast.error(`${exact.name} is already on this quotation — adjust the quantity instead`);
+        toast.error(t.form.items.duplicateToast(exact.name));
       } else {
         onSelect(exact);
-        toast.success(`${exact.name} added`);
+        toast.success(t.form.items.addedToast(exact.name));
       }
     } else {
-      toast.error(`No product matches barcode "${barcode}"`);
+      toast.error(t.form.items.barcodeNotFound(barcode));
     }
     setBarcode("");
   }
@@ -74,7 +76,7 @@ export function ProductSelector({
               handleBarcodeSubmit();
             }
           }}
-          placeholder="Scan a product barcode"
+          placeholder={t.form.items.scanBarcode}
           className="h-10 flex-1 bg-transparent text-sm outline-none placeholder:text-muted-foreground"
         />
         <kbd className="rounded border border-border bg-muted px-1.5 py-0.5 text-[10px] font-medium text-muted-foreground">
@@ -82,12 +84,10 @@ export function ProductSelector({
         </kbd>
         <button
           type="button"
-          aria-label="Scan with camera"
-          title="Camera barcode scanning is not implemented in this rebuild — see QUOTATION_AUDIT.md"
+          aria-label={t.form.items.scanWithCamera}
+          title={t.form.items.cameraNotWired}
           className="flex size-8 items-center justify-center rounded-md text-muted-foreground hover:bg-accent"
-          onClick={() =>
-            toast.info("Camera scanning isn't wired up in this rebuild — type or paste a barcode instead.")
-          }
+          onClick={() => toast.info(t.form.items.cameraNotWired)}
         >
           <Camera className="size-4" />
         </button>
@@ -95,12 +95,12 @@ export function ProductSelector({
 
       <div className="flex flex-col gap-1.5">
         <label className="text-xs font-medium uppercase tracking-wide text-muted-foreground">
-          Add product
+          {t.form.items.addProduct}
         </label>
         <Popover open={open} onOpenChange={setOpen}>
           <PopoverAnchor asChild>
             <Input
-              placeholder="Search product, SKU, or barcode..."
+              placeholder={t.form.items.searchProduct}
               value={query}
               onChange={(e) => {
                 setQuery(e.target.value);
@@ -116,7 +116,7 @@ export function ProductSelector({
           >
             <Command shouldFilter={false}>
               <CommandList>
-                <CommandEmpty>No products found.</CommandEmpty>
+                <CommandEmpty>{t.form.items.noProductsFound}</CommandEmpty>
                 <CommandGroup>
                   {(query ? results : []).map((product) => {
                     const alreadyAdded = excludeIds.includes(product.id);
@@ -136,7 +136,7 @@ export function ProductSelector({
                           <span className="text-xs text-muted-foreground">
                             SKU {product.sku}
                             {product.barcode ? ` · ${product.barcode}` : ""}
-                            {alreadyAdded ? " · already added" : ""}
+                            {alreadyAdded ? ` · ${t.form.items.alreadyAdded}` : ""}
                           </span>
                         </span>
                         <span className="text-sm font-medium">

@@ -17,6 +17,7 @@ import {
 } from "@/components/ui/dialog";
 import { QuotationStatusActions } from "@/components/quotation/quotation-status-actions";
 import { isDeletable, isEditable } from "@/lib/quotation-rules";
+import { useDictionary } from "@/i18n/dictionary-context";
 import type { QuotationStatus } from "@/generated/prisma/enums";
 
 export function QuotationDetailActions({
@@ -29,6 +30,7 @@ export function QuotationDetailActions({
   status: QuotationStatus;
 }) {
   const router = useRouter();
+  const { t } = useDictionary();
   const [confirmOpen, setConfirmOpen] = useState(false);
   const [deleting, setDeleting] = useState(false);
 
@@ -37,12 +39,12 @@ export function QuotationDetailActions({
     try {
       const res = await fetch(`/api/quotations/${id}`, { method: "DELETE" });
       const json = await res.json();
-      if (!res.ok) throw new Error(json?.error?.formErrors?.[0] ?? "Failed to delete quotation");
-      toast.success(`${number} deleted`);
+      if (!res.ok) throw new Error(json?.error?.formErrors?.[0] ?? t.list.toasts.deleteFailed);
+      toast.success(t.list.toasts.deleted(number));
       router.push("/admin/quotations");
       router.refresh();
     } catch (err) {
-      toast.error(err instanceof Error ? err.message : "Failed to delete quotation");
+      toast.error(err instanceof Error ? err.message : t.list.toasts.deleteFailed);
       setDeleting(false);
     }
   }
@@ -51,19 +53,19 @@ export function QuotationDetailActions({
     <>
       <div className="flex flex-wrap items-center gap-2 no-print">
         <Button variant="outline" onClick={() => window.print()}>
-          <Printer /> Print
+          <Printer /> {t.common.print}
         </Button>
         {isEditable(status) && (
           <Button variant="outline" asChild>
             <Link href={`/admin/quotations/${id}?edit=1`}>
-              <Pencil /> Edit
+              <Pencil /> {t.common.edit}
             </Link>
           </Button>
         )}
         <QuotationStatusActions id={id} status={status} />
         {isDeletable(status) && (
           <Button variant="outline" onClick={() => setConfirmOpen(true)}>
-            <Trash2 className="text-destructive" /> Delete
+            <Trash2 className="text-destructive" /> {t.common.delete}
           </Button>
         )}
       </div>
@@ -71,18 +73,15 @@ export function QuotationDetailActions({
       <Dialog open={confirmOpen} onOpenChange={setConfirmOpen}>
         <DialogContent>
           <DialogHeader>
-            <DialogTitle>Delete {number}?</DialogTitle>
-            <DialogDescription>
-              This permanently deletes the quotation and its line items. This action cannot be
-              undone.
-            </DialogDescription>
+            <DialogTitle>{t.list.deleteDialog.title(number)}</DialogTitle>
+            <DialogDescription>{t.list.deleteDialog.description}</DialogDescription>
           </DialogHeader>
           <DialogFooter>
             <Button variant="outline" onClick={() => setConfirmOpen(false)} disabled={deleting}>
-              Cancel
+              {t.common.cancel}
             </Button>
             <Button variant="destructive" onClick={handleDelete} disabled={deleting}>
-              {deleting ? "Deleting…" : "Delete"}
+              {deleting ? t.common.deleting : t.common.delete}
             </Button>
           </DialogFooter>
         </DialogContent>

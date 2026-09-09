@@ -1,12 +1,16 @@
+"use client";
+
 import { Badge } from "@/components/ui/badge";
-import { STATUS_BADGE_VARIANT, STATUS_LABELS } from "@/lib/quotation-rules";
+import { STATUS_BADGE_VARIANT } from "@/lib/quotation-rules";
+import { useDictionary } from "@/i18n/dictionary-context";
 import type { QuotationStatus } from "@/generated/prisma/enums";
 
 export function QuotationStatusBadge({ status }: { status: QuotationStatus }) {
+  const { t } = useDictionary();
   return (
     <Badge variant={STATUS_BADGE_VARIANT[status]}>
       <span className="size-1.5 rounded-full bg-current" />
-      {STATUS_LABELS[status]}
+      {t.status[status]}
     </Badge>
   );
 }

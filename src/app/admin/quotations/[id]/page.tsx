@@ -5,6 +5,8 @@ import { QuotationDetailView } from "@/components/quotation/quotation-detail-vie
 import { QuotationForm, type QuotationFormInitialData } from "@/components/quotation/quotation-form";
 import { isEditable } from "@/lib/quotation-rules";
 import type { QuotationDetail } from "@/lib/types";
+import { getLocale } from "@/i18n/get-locale";
+import { getDictionary } from "@/i18n/get-dictionary";
 
 export const dynamic = "force-dynamic";
 
@@ -58,6 +60,7 @@ function toFormInitialData(quotation: QuotationDetail): QuotationFormInitialData
 export default async function QuotationDetailPage({ params, searchParams }: PageProps) {
   const { id } = await params;
   const search = await searchParams;
+  const t = getDictionary(await getLocale());
 
   const quotation = await prisma.quotation.findUnique({
     where: { id },
@@ -77,12 +80,12 @@ export default async function QuotationDetailPage({ params, searchParams }: Page
     if (!isEditable(quotation.status)) {
       return (
         <div className="rounded-lg border border-warning/30 bg-warning/10 p-4 text-sm text-warning">
-          A quotation with status &quot;{quotation.status}&quot; can no longer be edited.
+          {t.detail.notEditable(t.status[quotation.status])}
         </div>
       );
     }
     return <QuotationForm initial={toFormInitialData(quotation)} />;
   }
 
-  return <QuotationDetailView quotation={quotation} />;
+  return <QuotationDetailView quotation={quotation} t={t} />;
 }

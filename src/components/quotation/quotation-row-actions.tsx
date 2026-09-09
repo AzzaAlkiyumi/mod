@@ -23,6 +23,7 @@ import {
   DialogTitle,
 } from "@/components/ui/dialog";
 import { isDeletable, isEditable } from "@/lib/quotation-rules";
+import { useDictionary } from "@/i18n/dictionary-context";
 import type { QuotationStatus } from "@/generated/prisma/enums";
 
 export function QuotationRowActions({
@@ -35,6 +36,7 @@ export function QuotationRowActions({
   status: QuotationStatus;
 }) {
   const router = useRouter();
+  const { t } = useDictionary();
   const [confirmOpen, setConfirmOpen] = useState(false);
   const [deleting, setDeleting] = useState(false);
 
@@ -44,13 +46,13 @@ export function QuotationRowActions({
       const res = await fetch(`/api/quotations/${id}`, { method: "DELETE" });
       const json = await res.json();
       if (!res.ok) {
-        throw new Error(json?.error?.formErrors?.[0] ?? "Failed to delete quotation");
+        throw new Error(json?.error?.formErrors?.[0] ?? t.list.toasts.deleteFailed);
       }
-      toast.success(`${number} deleted`);
+      toast.success(t.list.toasts.deleted(number));
       setConfirmOpen(false);
       router.refresh();
     } catch (err) {
-      toast.error(err instanceof Error ? err.message : "Failed to delete quotation");
+      toast.error(err instanceof Error ? err.message : t.list.toasts.deleteFailed);
     } finally {
       setDeleting(false);
     }
@@ -60,33 +62,33 @@ export function QuotationRowActions({
     <>
       <DropdownMenu>
         <DropdownMenuTrigger asChild>
-          <Button variant="ghost" size="icon" aria-label={`Actions for ${number}`}>
+          <Button variant="ghost" size="icon" aria-label={t.list.actions.menuFor(number)}>
             <MoreHorizontal />
           </Button>
         </DropdownMenuTrigger>
         <DropdownMenuContent align="end">
           <DropdownMenuItem asChild>
             <Link href={`/admin/quotations/${id}`}>
-              <Eye /> View
+              <Eye /> {t.list.actions.view}
             </Link>
           </DropdownMenuItem>
           {isEditable(status) && (
             <DropdownMenuItem asChild>
               <Link href={`/admin/quotations/${id}?edit=1`}>
-                <Pencil /> Edit
+                <Pencil /> {t.list.actions.edit}
               </Link>
             </DropdownMenuItem>
           )}
           <DropdownMenuItem asChild>
             <Link href={`/admin/quotations/${id}?print=1`}>
-              <Printer /> Print
+              <Printer /> {t.list.actions.print}
             </Link>
           </DropdownMenuItem>
           {isDeletable(status) && (
             <>
               <DropdownMenuSeparator />
               <DropdownMenuItem variant="destructive" onSelect={() => setConfirmOpen(true)}>
-                <Trash2 /> Delete
+                <Trash2 /> {t.list.actions.delete}
               </DropdownMenuItem>
             </>
           )}
@@ -96,18 +98,15 @@ export function QuotationRowActions({
       <Dialog open={confirmOpen} onOpenChange={setConfirmOpen}>
         <DialogContent>
           <DialogHeader>
-            <DialogTitle>Delete {number}?</DialogTitle>
-            <DialogDescription>
-              This permanently deletes the quotation and its line items. This action cannot be
-              undone.
-            </DialogDescription>
+            <DialogTitle>{t.list.deleteDialog.title(number)}</DialogTitle>
+            <DialogDescription>{t.list.deleteDialog.description}</DialogDescription>
           </DialogHeader>
           <DialogFooter>
             <Button variant="outline" onClick={() => setConfirmOpen(false)} disabled={deleting}>
-              Cancel
+              {t.common.cancel}
             </Button>
             <Button variant="destructive" onClick={handleDelete} disabled={deleting}>
-              {deleting ? "Deleting…" : "Delete"}
+              {deleting ? t.common.deleting : t.common.delete}
             </Button>
           </DialogFooter>
         </DialogContent>

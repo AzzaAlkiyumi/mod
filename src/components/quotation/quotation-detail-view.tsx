@@ -18,8 +18,15 @@ import { QuotationStatusBadge } from "@/components/quotation/quotation-status-ba
 import { QuotationDetailActions } from "@/components/quotation/quotation-detail-actions";
 import { formatCurrency, formatDate } from "@/lib/utils";
 import type { QuotationDetail } from "@/lib/types";
+import type { Dictionary } from "@/i18n/dictionaries/en";
 
-export function QuotationDetailView({ quotation }: { quotation: QuotationDetail }) {
+export function QuotationDetailView({
+  quotation,
+  t,
+}: {
+  quotation: QuotationDetail;
+  t: Dictionary;
+}) {
   return (
     <div className="flex flex-col gap-6 print:gap-4">
       <div className="flex flex-wrap items-start justify-between gap-4">
@@ -29,7 +36,7 @@ export function QuotationDetailView({ quotation }: { quotation: QuotationDetail 
             <QuotationStatusBadge status={quotation.status} />
           </div>
           <p className="mt-1 text-sm text-muted-foreground">
-            Issued {formatDate(quotation.issueDate)} from {quotation.store.name}
+            {t.detail.issuedFrom(formatDate(quotation.issueDate), quotation.store.name)}
           </p>
         </div>
         <QuotationDetailActions
@@ -43,11 +50,11 @@ export function QuotationDetailView({ quotation }: { quotation: QuotationDetail 
         <div className="flex flex-col gap-6 lg:col-span-2">
           <Card>
             <CardHeader>
-              <CardTitle>Quotation details</CardTitle>
-              <CardDescription>Customer, dates, and delivery addresses.</CardDescription>
+              <CardTitle>{t.detail.details.title}</CardTitle>
+              <CardDescription>{t.detail.details.subtitle}</CardDescription>
             </CardHeader>
             <CardContent className="grid gap-4 sm:grid-cols-2">
-              <Field label="Customer">
+              <Field label={t.detail.fields.customer}>
                 {quotation.customer ? (
                   <>
                     {quotation.customer.name}
@@ -64,32 +71,44 @@ export function QuotationDetailView({ quotation }: { quotation: QuotationDetail 
                   </>
                 )}
               </Field>
-              <Field label="Store">{quotation.store.name}</Field>
-              <Field label="Issue date">{formatDate(quotation.issueDate)}</Field>
-              <Field label="Valid until">{formatDate(quotation.validUntil)}</Field>
-              <Field label="Expected delivery">{formatDate(quotation.expectedDeliveryDate)}</Field>
-              <Field label="Created by">{quotation.createdBy.name}</Field>
-              <Field label="Billing address">{quotation.billingAddress || "—"}</Field>
-              <Field label="Shipping address">{quotation.shippingAddress || "—"}</Field>
+              <Field label={t.detail.fields.store}>{quotation.store.name}</Field>
+              <Field label={t.detail.fields.issueDate}>{formatDate(quotation.issueDate)}</Field>
+              <Field label={t.detail.fields.validUntil}>{formatDate(quotation.validUntil)}</Field>
+              <Field label={t.detail.fields.expectedDelivery}>
+                {formatDate(quotation.expectedDeliveryDate)}
+              </Field>
+              <Field label={t.detail.fields.createdBy}>{quotation.createdBy.name}</Field>
+              <Field label={t.detail.fields.billingAddress}>
+                {quotation.billingAddress || "—"}
+              </Field>
+              <Field label={t.detail.fields.shippingAddress}>
+                {quotation.shippingAddress || "—"}
+              </Field>
             </CardContent>
           </Card>
 
           <Card>
             <CardHeader>
-              <CardTitle>Items</CardTitle>
-              <CardDescription>{quotation.items.length} line item(s)</CardDescription>
+              <CardTitle>{t.detail.items.title}</CardTitle>
+              <CardDescription>{t.detail.items.count(quotation.items.length)}</CardDescription>
             </CardHeader>
             <CardContent>
               <div className="rounded-md border border-border">
                 <Table>
                   <TableHeader>
                     <TableRow>
-                      <TableHead>Product</TableHead>
-                      <TableHead className="text-right">Qty</TableHead>
-                      <TableHead className="text-right">Unit price</TableHead>
-                      <TableHead className="text-right">Discount</TableHead>
-                      <TableHead className="text-right">Tax</TableHead>
-                      <TableHead className="text-right">Line total</TableHead>
+                      <TableHead>{t.detail.items.columns.product}</TableHead>
+                      <TableHead className="text-end">{t.detail.items.columns.qty}</TableHead>
+                      <TableHead className="text-end">
+                        {t.detail.items.columns.unitPrice}
+                      </TableHead>
+                      <TableHead className="text-end">
+                        {t.detail.items.columns.discount}
+                      </TableHead>
+                      <TableHead className="text-end">{t.detail.items.columns.tax}</TableHead>
+                      <TableHead className="text-end">
+                        {t.detail.items.columns.lineTotal}
+                      </TableHead>
                     </TableRow>
                   </TableHeader>
                   <TableBody>
@@ -103,21 +122,21 @@ export function QuotationDetailView({ quotation }: { quotation: QuotationDetail 
                             </span>
                           </div>
                         </TableCell>
-                        <TableCell className="text-right">{Number(item.quantity)}</TableCell>
-                        <TableCell className="text-right">
+                        <TableCell className="text-end">{Number(item.quantity)}</TableCell>
+                        <TableCell className="text-end">
                           {formatCurrency(item.unitPrice)}
                         </TableCell>
-                        <TableCell className="text-right">
+                        <TableCell className="text-end">
                           {Number(item.discountValue) > 0
                             ? item.discountType === "PERCENT"
                               ? `${Number(item.discountValue)}%`
                               : formatCurrency(item.discountValue)
                             : "—"}
                         </TableCell>
-                        <TableCell className="text-right">
+                        <TableCell className="text-end">
                           {Number(item.taxRate) > 0 ? `${Number(item.taxRate)}%` : "—"}
                         </TableCell>
-                        <TableCell className="text-right font-medium">
+                        <TableCell className="text-end font-medium">
                           {formatCurrency(item.lineTotal)}
                         </TableCell>
                       </TableRow>
@@ -131,13 +150,13 @@ export function QuotationDetailView({ quotation }: { quotation: QuotationDetail 
           {(quotation.termsAndConditions || quotation.customerNotes) && (
             <Card>
               <CardHeader>
-                <CardTitle>Delivery, terms, and notes</CardTitle>
+                <CardTitle>{t.detail.deliveryTitle}</CardTitle>
               </CardHeader>
               <CardContent className="flex flex-col gap-4 text-sm">
                 {quotation.termsAndConditions && (
                   <div>
                     <p className="mb-1 text-xs font-medium uppercase tracking-wide text-muted-foreground">
-                      Terms and conditions
+                      {t.detail.termsAndConditions}
                     </p>
                     <p className="whitespace-pre-wrap">{quotation.termsAndConditions}</p>
                   </div>
@@ -145,7 +164,7 @@ export function QuotationDetailView({ quotation }: { quotation: QuotationDetail 
                 {quotation.customerNotes && (
                   <div>
                     <p className="mb-1 text-xs font-medium uppercase tracking-wide text-muted-foreground">
-                      Customer notes
+                      {t.detail.customerNotes}
                     </p>
                     <p className="whitespace-pre-wrap">{quotation.customerNotes}</p>
                   </div>
@@ -158,20 +177,20 @@ export function QuotationDetailView({ quotation }: { quotation: QuotationDetail 
         <div>
           <Card className="sticky top-6">
             <CardHeader>
-              <CardTitle>Quotation summary</CardTitle>
+              <CardTitle>{t.detail.summaryTitle}</CardTitle>
             </CardHeader>
             <CardContent className="flex flex-col gap-3 text-sm">
-              <Row label="Subtotal" value={formatCurrency(quotation.subtotal)} />
-              <Row label="Discount" value={formatCurrency(quotation.discountTotal)} />
-              <Row label="Tax" value={formatCurrency(quotation.taxTotal)} />
+              <Row label={t.form.summary.subtotal} value={formatCurrency(quotation.subtotal)} />
+              <Row label={t.form.summary.discount} value={formatCurrency(quotation.discountTotal)} />
+              <Row label={t.form.summary.tax} value={formatCurrency(quotation.taxTotal)} />
               <Separator />
               <div className="flex items-center justify-between text-base font-semibold">
-                <span>Total</span>
+                <span>{t.form.summary.total}</span>
                 <span>{formatCurrency(quotation.total)}</span>
               </div>
               {quotation.status === "CONVERTED" && (
                 <p className="mt-1 text-xs text-muted-foreground">
-                  Converted {formatDate(quotation.convertedAt)}
+                  {t.detail.convertedOn(formatDate(quotation.convertedAt))}
                 </p>
               )}
             </CardContent>

@@ -518,6 +518,55 @@ is also called out inline above where it's relevant):
 - **npm install bug**: `npm@10.9.7`'s dependency resolver (`arborist`) crashed
   (`Cannot read properties of null (reading 'edgesOut')`) on this dependency set; every
   install in this project therefore uses `--legacy-peer-deps`.
+- **Internationalization (English/Arabic) and RTL/LTR**, added after the initial
+  rebuild, at the user's request: the reference recording's header shows a functioning
+  "LANGUAGE" selector (English/العربية) but the recording never actually switches it, so
+  the *existence* of bilingual support is confirmed but its exact translated copy is
+  `UNKNOWN` — every Arabic string in `src/i18n/dictionaries/ar.ts` is this rebuild's own
+  translation, not the reference's.
+  - **Architecture**: a lightweight custom dictionary system (no `next-intl`/`react-intl`
+    dependency) — `src/i18n/dictionaries/{en,ar}.ts` are plain objects (`ar.ts` is typed
+    `satisfies Dictionary` against `en.ts` so a missing key is a compile error), resolved
+    per-request server-side via `getLocale()` (cookie, else `Accept-Language`, else
+    English) and `getDictionary()`. `src/proxy.ts` (Next.js 16 renamed `middleware.ts` to
+    `proxy.ts`) persists the auto-detected locale into a `NEXT_LOCALE` cookie on a
+    visitor's first request. The header's language `<Select>` is a real, working control
+    (`language-switcher.tsx`) that rewrites the cookie and calls `router.refresh()`.
+  - **Server/Client boundary gotcha**: the dictionaries contain functions (for
+    parameterized strings like "QT-000006 deleted"), and React Server Components cannot
+    serialize functions into Client Components. `DictionaryProvider`
+    (`src/i18n/dictionary-context.tsx`) therefore passes only the `locale` string through
+    context; each Client Component calls the pure `getDictionary(locale)` itself via the
+    `useDictionary()` hook, while Server Components (`page.tsx` files) call it directly.
+  - **`dir="rtl"`/`dir="ltr"`** is set once, on `<html>`, from the resolved locale. Layout
+    mostly self-mirrors for free because Tailwind's `flex`/`grid` respect the CSS
+    `direction` property; the deliberate fixes on top of that were: logical properties
+    (`ps-`/`pe-`/`ms-`/`me-`/`start-`/`end-`/`border-e`) in place of physical
+    `pl-`/`pr-`/`ml-`/`mr-`/`left-`/`right-`/`border-r` wherever a component's own
+    one-off className string set them (safe to rewrite outright); an explicit
+    `rtl:left-auto rtl:right-0` override for the mobile-nav drawer's slide-in edge, since
+    it *merges into* a shared `Dialog` base class via `cn()` and mixing a physical
+    `left-*` override with a logical `start-*` one against that same base risked an
+    unpredictable win between the two depending on Tailwind's internal utility-ordering
+    (physical-vs-physical, `left-0` vs `left-1/2`, is a guaranteed, unambiguous override);
+    `rtl:-scale-x-100` on the form's "back" arrow icon so it visually points the correct
+    reading direction; `text-end` instead of `text-right` for numeric table columns.
+  - **Arabic typography**: `Noto Sans Arabic` (via `next/font/google`) is layered in for
+    `:dir(rtl)` content, falling back to the existing Geist/system sans stack.
+  - **Bidi bug found and fixed during QA**: an ISO date (`2026-09-09`) interpolated
+    *inline* inside a translated Arabic sentence (e.g. "Issued 2026-09-09 from Main
+    Store") visually reordered itself to `09-09-2026` — a well-known Unicode Bidi
+    Algorithm artifact where a run of digit-groups separated by hyphens has no strong
+    directional character to anchor it, so it inherits reordering from the surrounding
+    RTL paragraph. Fixed by wrapping such interpolated values in Unicode directional-
+    isolate marks (U+2066/U+2069) inside `ar.ts` (see the `ltr()` helper there) — dates
+    shown standalone in their own cell/field (not embedded in a sentence) were unaffected
+    and needed no change. Quotation numbers and product/customer names embedded the same
+    way were checked and found *not* affected, because they start with a strong-LTR
+    Latin letter that anchors the whole run.
+  - Currency/date formatting itself (`formatCurrency`/`formatDate` in `src/lib/utils.ts`)
+    stays locale-invariant — the reference UI shows plain `YYYY-MM-DD` dates and `$`
+    amounts regardless of language, so no per-locale number formatting was introduced.
 
 ## 15. Testing Results
 
@@ -566,12 +615,21 @@ running dev server, screenshotting each step:
     session).
 19. ✅ Responsive — desktop/tablet/mobile screenshots taken; mobile hamburger nav opens
     and navigates correctly; forms and tables reflow without horizontal page scroll.
+20. ✅ Language/RTL — `Accept-Language: ar` auto-detected on first visit (`<html
+    dir="rtl" lang="ar">` confirmed via `document.documentElement`); the header's
+    language `<Select>` switches live between English/Arabic and back without a full
+    reload, correctly toggling `dir` and every string each time; screenshotted the list,
+    detail, create-form, customer-search popover, and mobile nav in Arabic — sidebar,
+    header, table columns, form fields, and the mobile drawer's slide-in edge all mirror
+    correctly; the English layout was re-screenshotted afterward to confirm no
+    regressions.
 
-No unresolved bugs remained after this pass. Two real bugs were found and fixed during
-testing (both root-caused to the Next.js dev server holding a stale Prisma Client
-singleton across a schema migration): a `NaN` discount total, and a "customer" it derives
+No unresolved bugs remained after this pass. Three real bugs were found and fixed during
+testing: two root-caused to the Next.js dev server holding a stale Prisma Client
+singleton across a schema migration (a `NaN` discount total, and a "customer" it derives
 from not yet having the new `Customer.discountType/discountValue` columns until the dev
-server was restarted post-migration.
+server was restarted post-migration); and one Unicode bidi reordering bug on Arabic dates
+embedded inline in a sentence, fixed as described in §14.
 
 ## 16. Running locally
 

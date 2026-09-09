@@ -13,12 +13,14 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@/components/ui/select";
-import { QUOTATION_STATUSES, STATUS_LABELS } from "@/lib/quotation-rules";
+import { QUOTATION_STATUSES } from "@/lib/quotation-rules";
+import { useDictionary } from "@/i18n/dictionary-context";
 
 export function QuotationFilters() {
   const router = useRouter();
   const searchParams = useSearchParams();
   const [isPending, startTransition] = useTransition();
+  const { t } = useDictionary();
 
   const [q, setQ] = useState(searchParams.get("q") ?? "");
 
@@ -48,17 +50,17 @@ export function QuotationFilters() {
     <div className="grid gap-4 border-b border-border p-4 md:grid-cols-[160px_160px_160px_1fr_auto] md:items-end">
       <div className="flex flex-col gap-1.5">
         <label className="text-xs font-medium uppercase tracking-wide text-muted-foreground">
-          Status
+          {t.list.filters.status}
         </label>
         <Select value={status} onValueChange={(v) => applyParam("status", v === "all" ? "" : v)}>
           <SelectTrigger>
             <SelectValue />
           </SelectTrigger>
           <SelectContent>
-            <SelectItem value="all">All statuses</SelectItem>
+            <SelectItem value="all">{t.list.filters.allStatuses}</SelectItem>
             {QUOTATION_STATUSES.map((s) => (
               <SelectItem key={s} value={s}>
-                {STATUS_LABELS[s]}
+                {t.status[s]}
               </SelectItem>
             ))}
           </SelectContent>
@@ -67,23 +69,23 @@ export function QuotationFilters() {
 
       <div className="flex flex-col gap-1.5">
         <label className="text-xs font-medium uppercase tracking-wide text-muted-foreground">
-          From
+          {t.list.filters.from}
         </label>
         <Input type="date" value={from} onChange={(e) => applyParam("from", e.target.value)} />
       </div>
 
       <div className="flex flex-col gap-1.5">
         <label className="text-xs font-medium uppercase tracking-wide text-muted-foreground">
-          To
+          {t.list.filters.to}
         </label>
         <Input type="date" value={to} onChange={(e) => applyParam("to", e.target.value)} />
       </div>
 
       <div className="relative">
-        <Search className="pointer-events-none absolute left-3 top-1/2 size-4 -translate-y-1/2 text-muted-foreground" />
+        <Search className="pointer-events-none absolute start-3 top-1/2 size-4 -translate-y-1/2 text-muted-foreground" />
         <Input
-          placeholder="Number, customer, product, or SKU..."
-          className="pl-9"
+          placeholder={t.list.filters.searchPlaceholder}
+          className="ps-9"
           value={q}
           onChange={(e) => setQ(e.target.value)}
           onKeyDown={(e) => {
@@ -103,7 +105,7 @@ export function QuotationFilters() {
           });
         }}
       >
-        <X /> Reset filters
+        <X /> {t.common.resetFilters}
       </Button>
     </div>
   );

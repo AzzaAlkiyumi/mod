@@ -14,6 +14,7 @@ import {
   CommandList,
 } from "@/components/ui/command";
 import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
+import { useDictionary } from "@/i18n/dictionary-context";
 
 export interface CustomerOption {
   id: string;
@@ -34,6 +35,7 @@ export function CustomerSelector({
   value: CustomerOption | null;
   onChange: (customer: CustomerOption | null) => void;
 }) {
+  const { t } = useDictionary();
   const [open, setOpen] = useState(false);
   const [query, setQuery] = useState("");
   const [customers, setCustomers] = useState<CustomerOption[]>([]);
@@ -70,16 +72,22 @@ export function CustomerSelector({
           className="h-9 w-full justify-between font-normal"
         >
           <span className={cn("truncate", !value && "text-muted-foreground")}>
-            {value ? `${value.name} · ${value.phone ?? value.code}` : "Use prospect details"}
+            {value
+              ? `${value.name} · ${value.phone ?? value.code}`
+              : t.form.details.useProspectDetails}
           </span>
           <ChevronsUpDown className="size-4 shrink-0 opacity-50" />
         </Button>
       </PopoverTrigger>
       <PopoverContent className="w-(--radix-popover-trigger-width) p-0" align="start">
         <Command shouldFilter={false}>
-          <CommandInput placeholder="Search customers..." value={query} onValueChange={setQuery} />
+          <CommandInput
+            placeholder={t.form.details.searchCustomers}
+            value={query}
+            onValueChange={setQuery}
+          />
           <CommandList>
-            {!loading && <CommandEmpty>No customers found.</CommandEmpty>}
+            {!loading && <CommandEmpty>{t.form.details.noCustomersFound}</CommandEmpty>}
             <CommandGroup>
               <CommandItem
                 value="__prospect__"
@@ -89,7 +97,7 @@ export function CustomerSelector({
                 }}
               >
                 <Check className={cn("size-4", value ? "opacity-0" : "opacity-100")} />
-                Use prospect details
+                {t.form.details.useProspectDetails}
               </CommandItem>
               {customers.map((customer) => (
                 <CommandItem

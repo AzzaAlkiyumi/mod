@@ -12,7 +12,7 @@ import {
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
 import { ChevronDown } from "lucide-react";
-import { STATUS_LABELS } from "@/lib/quotation-rules";
+import { useDictionary } from "@/i18n/dictionary-context";
 import type { QuotationStatus } from "@/generated/prisma/enums";
 
 const NEXT_STATUSES: Record<QuotationStatus, QuotationStatus[]> = {
@@ -32,6 +32,7 @@ export function QuotationStatusActions({
   status: QuotationStatus;
 }) {
   const router = useRouter();
+  const { t } = useDictionary();
   const [loading, setLoading] = useState(false);
   const options = NEXT_STATUSES[status];
 
@@ -44,15 +45,15 @@ export function QuotationStatusActions({
         body: JSON.stringify({ status: next }),
       });
       const json = await res.json();
-      if (!res.ok) throw new Error(json?.error?.formErrors?.[0] ?? "Failed to update status");
+      if (!res.ok) throw new Error(json?.error?.formErrors?.[0] ?? t.detail.toasts.statusFailed);
       toast.success(
         next === "CONVERTED"
-          ? "Quotation converted to a sale"
-          : `Status changed to ${STATUS_LABELS[next]}`,
+          ? t.detail.toasts.converted
+          : t.detail.toasts.statusChanged(t.status[next]),
       );
       router.refresh();
     } catch (err) {
-      toast.error(err instanceof Error ? err.message : "Failed to update status");
+      toast.error(err instanceof Error ? err.message : t.detail.toasts.statusFailed);
     } finally {
       setLoading(false);
     }
@@ -64,14 +65,14 @@ export function QuotationStatusActions({
     <DropdownMenu>
       <DropdownMenuTrigger asChild>
         <Button variant="outline" disabled={loading}>
-          {loading ? "Updating…" : "Change status"} <ChevronDown />
+          {loading ? t.detail.actions.updating : t.detail.actions.changeStatus} <ChevronDown />
         </Button>
       </DropdownMenuTrigger>
       <DropdownMenuContent align="end">
         {options.map((opt) => (
           <DropdownMenuItem key={opt} onSelect={() => changeStatus(opt)}>
-            Mark as {STATUS_LABELS[opt]}
-            {opt === "CONVERTED" ? " (convert to sale)" : ""}
+            {t.detail.statusMenu.markAs(t.status[opt])}
+            {opt === "CONVERTED" ? t.detail.statusMenu.convertSuffix : ""}
           </DropdownMenuItem>
         ))}
       </DropdownMenuContent>
