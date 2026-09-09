@@ -52,8 +52,10 @@ export function QuotationDetailActions({
   return (
     <>
       <div className="flex flex-wrap items-center gap-2 no-print">
-        <Button variant="outline" onClick={() => window.print()}>
-          <Printer /> {t.common.print}
+        <Button variant="outline" asChild>
+          <Link href={`/quotation-preview/${id}`} target="_blank" rel="noopener noreferrer">
+            <Printer /> {t.common.print}
+          </Link>
         </Button>
         {isEditable(status) && (
           <Button variant="outline" asChild>

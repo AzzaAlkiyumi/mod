@@ -80,7 +80,7 @@ export function QuotationRowActions({
             </DropdownMenuItem>
           )}
           <DropdownMenuItem asChild>
-            <Link href={`/admin/quotations/${id}?print=1`}>
+            <Link href={`/quotation-preview/${id}`} target="_blank" rel="noopener noreferrer">
               <Printer /> {t.list.actions.print}
             </Link>
           </DropdownMenuItem>
