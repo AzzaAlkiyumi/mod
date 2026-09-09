@@ -284,6 +284,11 @@ export function QuotationPrintPreview({
         @media print {
           @page { size: A4; margin: 0; }
           body { background: #fff; }
+          * {
+            -webkit-print-color-adjust: exact !important;
+            print-color-adjust: exact !important;
+            color-adjust: exact !important;
+          }
           .print-sheet { box-shadow: none !important; max-width: none !important; }
           table { width: 100%; }
           thead { display: table-header-group; }
