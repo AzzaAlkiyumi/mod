@@ -39,6 +39,9 @@ const en = {
     },
     systemsOnline: "All systems online",
     openNav: "Open navigation menu",
+    searchPlaceholder: "Search menu...",
+    clearSearch: "Clear search",
+    noResults: "No matching menu items",
   },
   header: {
     breadcrumbLabel: "Breadcrumb",

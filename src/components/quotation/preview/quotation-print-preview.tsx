@@ -1,19 +1,20 @@
 "use client";
 
 /**
- * PREVIEW ONLY — not linked from, and does not touch, the real Quotation
- * page (`/admin/quotations/*`) or its components. Layout/spacing/table
- * structure is modeled on a reference invoice the user supplied; every
- * value shown here is read from existing Quotation/Customer/Store data —
- * no new database fields, no invented company details. Where the
- * reference showed something we have no field for (company C.R./VAT
- * number, a product photo), it is simply left out rather than faked.
+ * The real print/PDF destination for a quotation (linked from the Print
+ * button on `/admin/quotations/[id]` and from the list's row actions).
+ * Layout/spacing/table structure is modeled on a reference invoice the
+ * user supplied; every value shown here is read from existing
+ * Quotation/Customer/Store data — no new database fields, no invented
+ * company details. Where the reference showed something we have no field
+ * for (company C.R./VAT number, a product photo), it is simply left out
+ * rather than faked.
  *
- * Red is scoped to this preview only, per instruction — it does not touch
- * the site's real primary (orange) color anywhere else.
+ * Red is scoped to this document only, per instruction — it does not
+ * touch the site's real primary (orange) color anywhere else.
  */
 
-import { useState } from "react";
+import { useEffect } from "react";
 import { ImageOff, ReceiptText } from "lucide-react";
 
 import { formatCurrency, formatDate } from "@/lib/utils";
@@ -28,7 +29,6 @@ type Lang = "en" | "ar";
 const STRINGS = {
   en: {
     dir: "ltr" as const,
-    previewLabel: "Preview language",
     printBtn: "Print / Save as PDF",
     docTitle: "QUOTATION",
     quotationNo: "Quotation No.",
@@ -56,7 +56,6 @@ const STRINGS = {
   },
   ar: {
     dir: "rtl" as const,
-    previewLabel: "لغة المعاينة",
     printBtn: "طباعة / حفظ كـ PDF",
     docTitle: "عرض سعر",
     quotationNo: "رقم عرض السعر",
@@ -91,9 +90,19 @@ export function QuotationPrintPreview({
   quotation: PreviewQuotation;
   initialLang: Lang;
 }) {
-  const [lang, setLang] = useState<Lang>(initialLang);
+  // Language always follows the site's current language setting — no manual
+  // toggle here, matching "language follows the site's selection" from the
+  // original brief. This page is the real print destination now, so it
+  // opens straight into the browser's print dialog rather than waiting for
+  // an extra click.
+  const lang = initialLang;
   const s = STRINGS[lang];
   const dir = s.dir;
+
+  useEffect(() => {
+    const timeout = setTimeout(() => window.print(), 150);
+    return () => clearTimeout(timeout);
+  }, []);
 
   const customerName = quotation.customer?.name ?? quotation.prospectName ?? s.walkIn;
   const customerSubline = quotation.customer
@@ -102,53 +111,16 @@ export function QuotationPrintPreview({
 
   return (
     <div dir={dir} lang={lang} style={{ fontFamily: "var(--font-geist-sans, sans-serif)" }}>
-      {/* Non-printing review toolbar */}
-      <div className="no-print sticky top-0 z-10 flex items-center justify-between gap-3 border-b border-neutral-200 bg-white/95 px-4 py-2.5 backdrop-blur sm:px-8">
-        <div className="flex items-center gap-2 text-xs text-neutral-500">
-          <span className="inline-flex items-center gap-1 rounded-full bg-neutral-100 px-2.5 py-1 font-medium text-neutral-600">
-            Preview only — not linked into the real Quotation page
-          </span>
-        </div>
-        <div className="flex items-center gap-3">
-          <span className="text-xs font-medium text-neutral-500">{s.previewLabel}</span>
-          <div className="flex overflow-hidden rounded-md border border-neutral-200">
-            <button
-              type="button"
-              onClick={() => setLang("en")}
-              aria-pressed={lang === "en"}
-              className="px-3 py-1.5 text-xs font-semibold"
-              style={
-                lang === "en"
-                  ? { background: RED, color: "#fff" }
-                  : { background: "#fff", color: "#57534e" }
-              }
-            >
-              English
-            </button>
-            <button
-              type="button"
-              onClick={() => setLang("ar")}
-              aria-pressed={lang === "ar"}
-              className="border-s border-neutral-200 px-3 py-1.5 text-xs font-semibold"
-              style={
-                lang === "ar"
-                  ? { background: RED, color: "#fff" }
-                  : { background: "#fff", color: "#57534e" }
-              }
-            >
-              العربية
-            </button>
-          </div>
-          <button
-            type="button"
-            onClick={() => window.print()}
-            className="rounded-md px-3.5 py-1.5 text-xs font-semibold text-white"
-            style={{ background: RED }}
-          >
-            {s.printBtn}
-          </button>
-        </div>
-      </div>
+      {/* Small, unobtrusive re-print affordance — the dialog above already
+          opened automatically, this is only for "print again" after closing it. */}
+      <button
+        type="button"
+        onClick={() => window.print()}
+        className="no-print fixed end-4 top-4 z-10 rounded-md px-3 py-1.5 text-xs font-semibold text-white shadow-sm"
+        style={{ background: RED }}
+      >
+        {s.printBtn}
+      </button>
 
       {/* The document */}
       <div className="flex justify-center bg-neutral-100 px-4 py-8 print:bg-white print:p-0">

@@ -49,6 +49,9 @@ const ar = {
     },
     systemsOnline: "كل الأنظمة تعمل",
     openNav: "فتح قائمة التنقل",
+    searchPlaceholder: "ابحث في القائمة...",
+    clearSearch: "مسح البحث",
+    noResults: "لا توجد عناصر مطابقة",
   },
   header: {
     breadcrumbLabel: "مسار التنقل",
