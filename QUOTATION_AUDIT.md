@@ -889,3 +889,54 @@ created a second quotation against a seeded product with no Arabic translation a
 confirmed Arabic mode falls back to the English name with no extra description line,
 matching the exact pre-change behavior for untranslated products. `npx tsc --noEmit`
 and `npm run lint` both clean.
+
+## 21. Add Product form expanded to 4 tabs (General/Inventory/Pricing & Tax/Compliance)
+
+Follow-up, driven by a second reference video of the real site's New Product page
+(previously only the General tab had been seen — this video also showed Inventory,
+Pricing & Tax, and Compliance). Built as an isolated preview first
+(`/admin/product-preview/new`, `product-form-preview-v2.tsx`, screenshots shared with
+the user in both languages), then approved ("طبقها" — apply it) and promoted into the
+real `/admin/products/new` page.
+
+**Explicitly excluded**, per direction, from the reference's own Pricing & Tax and
+Inventory tabs: **per-store pricing** and **per-store shelf locations** — this
+business prices and stocks identically across its stores, so no `Store`-scoped
+override table was added.
+
+**Schema — 17 new nullable/defaulted columns on `Product`** (migration
+`20260913202218_add_product_general_inventory_pricing_compliance`, purely additive,
+verified with `prisma migrate deploy` — no data loss, existing rows got the column
+defaults):
+
+- General: `shortDescription`, `availableForSale` (default true), `featured` (default
+  false)
+- Inventory (display/config only — no stock ledger exists in this app, so these don't
+  drive real quantity tracking): `trackStock` (default true), `soldByWeight`,
+  `trackBatches`, `trackExpiry`, `expiryDate`, `reorderAt`, `reorderQuantity`
+- Pricing & Tax: `costPrice`, `mrp` (for margin display only — never used in
+  Quotation/POS price calculations, which still use `price` exclusively),
+  `priceIncludesTax`
+- Compliance: `hsnCode`, `drugSchedule` (default `"NOT_SCHEDULED"`, one of the
+  reference's six values — kept even though this business doesn't sell scheduled
+  drugs, per explicit request to mirror the tab's content), `genericName`,
+  `manufacturer`
+
+**"Easy to use" design**, per the user's explicit concern about a 4-tab form: only
+the General tab's existing required fields (name, category, unit, price) are
+mandatory — every new field across all four tabs is optional with a sensible default,
+so the "just add a product fast" flow is byte-for-byte the same four fields as before.
+Margin/Markup/Profit-per-unit in the Pricing & Tax tab are computed client-side from
+`price`/`costPrice`, not stored columns.
+
+**Verified**: full flow filling all four tabs end-to-end — created a product with
+values in every new field and confirmed every one round-tripped exactly via the API;
+separately created a product touching only the four original General fields (the
+"quick path") and confirmed it saves with all-defaults on the rest, identical to the
+pre-this-change behavior; confirmed a product created before this migration
+(`Wireless Mouse`) now reads back with the new columns at their defaults
+(`availableForSale: true`, `drugSchedule: "NOT_SCHEDULED"`, etc.) rather than erroring;
+confirmed `/admin/pos` and `/admin/quotations/new` still render with zero console
+errors and the POS grid still lists every product, new fields included, without
+layout breakage. The preview route/component were removed once the real page replaced
+them. `npx tsc --noEmit` and `npm run lint` clean throughout.

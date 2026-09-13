@@ -140,6 +140,35 @@ model Product {
   category      String?
   taxId         String?
   tax           Tax?            @relation(fields: [taxId], references: [id])
+  /// One-line summary shown in product pickers — distinct from the fuller
+  /// descriptionEn/Ar. Added per the reference site's General tab.
+  shortDescription String?
+  /// When false, hidden from the cashier catalog (POS grid) — the product
+  /// row itself is untouched, this only gates display.
+  availableForSale Boolean       @default(true)
+  /// Pins the product on the cashier's common-items rail.
+  featured         Boolean       @default(false)
+  /// Inventory tab settings — display/config only in this app; no stock
+  /// ledger exists yet, so these don't drive any real quantity tracking.
+  trackStock       Boolean       @default(true)
+  soldByWeight     Boolean       @default(false)
+  trackBatches     Boolean       @default(false)
+  trackExpiry      Boolean       @default(false)
+  expiryDate       DateTime?
+  reorderAt        Int?
+  reorderQuantity  Int?
+  /// Cost/MRP are for margin tracking only — never used in Quotation/POS
+  /// price calculations, which continue to use `price` exclusively.
+  costPrice        Decimal?      @db.Decimal(12, 3)
+  mrp              Decimal?      @db.Decimal(12, 3)
+  priceIncludesTax Boolean       @default(false)
+  /// Compliance tab — tax/regulatory fields from the reference site, kept
+  /// generic (not wired into any tax calculation) since this business
+  /// doesn't sell scheduled drugs.
+  hsnCode          String?
+  drugSchedule     String        @default("NOT_SCHEDULED")
+  genericName      String?
+  manufacturer     String?
   createdAt     DateTime        @default(now())
   updatedAt     DateTime        @updatedAt
   quotationItems QuotationItem[]
