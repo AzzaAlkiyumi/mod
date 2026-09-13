@@ -724,3 +724,66 @@ section documents that addition.
   database directly), the empty-cart guard disables "Complete sale", English/LTR and
   Arabic/RTL both render and calculate correctly, and the Quotation form's own customer
   selector was re-checked to confirm it still defaults to its original copy.
+
+## 18. Real company data, OMR currency, and a bilingual print mode
+
+The user supplied their own company's real invoice (TECHNICAL LINE / TIS, Oman) as a
+reference and asked for the Quotation print document to match it "to the letter," using
+their real data. Three decisions this required were put to the user explicitly before
+implementing (each conflicted with, or went well beyond, an earlier instruction) —
+their answers, and what was built:
+
+1. **Language display**: the reference invoice shows Arabic and English together
+   throughout — directly at odds with the earlier "one language only, matching the
+   site's selection" rule. Resolution: the print document still *defaults* to the
+   site's current language (unchanged, single-language behavior — same as before), but
+   now has an English / Arabic / Both toggle (`quotation-print-preview.tsx`, no-print
+   UI) so the user can switch to a bilingual rendering — every label, table header, and
+   total shown in both languages, stacked — on demand. The toggle is local `useState`,
+   defaulting to `initialLang`; only the initial site-language render auto-prints,
+   matching prior behavior.
+2. **Company data**: the invoice's legal/registration details (C.R No., P.O. Box,
+   VAT No., address, mobile, email — real values, not invented) had nowhere to live —
+   `Store` had no such fields, and the user had earlier explicitly asked not to add a
+   Settings screen for company data. Resolution: added nullable fields directly to
+   `Store` (`legalNameEn/Ar`, `crNumber`, `poBox`, `countryEn/Ar`, `addressEn/Ar`,
+   `vatNumber`, `mobile`, `email`, `logoUrl` — migration
+   `20260913090000_omr_currency_and_company_data`) and seeded them with the user's real
+   values (`prisma/seed.ts`) — still no Settings screen. `legalNameAr` is left `null`:
+   the reference invoice never gave a separate Arabic company name, only labels, so
+   none was invented. The print header (`quotation-print-preview.tsx`) reads these
+   fields and renders C.R/P.O.Box/VAT/Mobile/Email as labeled rows and
+   country/address as plain lines, all through the same language-mode toggle as
+   everything else on the document.
+3. **Currency**: the reference invoice is in Omani Rial (OMR, 3 decimal places/baisa),
+   while the app used USD (2 decimals) everywhere. Resolution (app-wide, not just the
+   print document, per the user's choice): every monetary `Decimal` column widened from
+   `(12,2)` to `(12,3)` (same migration as above — a safe, non-lossy precision
+   widening), `calculateQuotationTotals`'s internal rounding moved from 2 to 3 decimal
+   places, and `formatCurrency()` (`src/lib/utils.ts`) now always formats OMR
+   (`Intl.NumberFormat` with `currency: "OMR"`, `numberingSystem: "latn"` so digits stay
+   Western/Hindu-Arabic in both languages, matching the reference), taking a
+   `locale: "en" | "ar"` parameter instead of a currency code — every call site across
+   Quotation (list/detail/form/summary/print) and POS was updated to pass the current
+   locale (client components via `useDictionary()`'s `locale`; server components via an
+   explicit `locale` prop threaded from `getLocale()`). The seed's Standard VAT rate was
+   also changed from 15% to 5% to match Oman's actual VAT rate and the reference
+   invoice — a data-only change, not requested outright but a direct consequence of
+   grounding the demo data in the same real-world context as the currency/company
+   changes.
+- **Bug found and fixed while re-seeding**: `prisma/seed.ts`'s cleanup order deleted
+  `Product` rows before the `Sale`/`SaleItem` tables added in §17, which reference
+  `Product` — a foreign-key violation on every re-seed after that point. Fixed by
+  deleting `SaleItem`/`Sale` before `Product` in the cleanup sequence.
+- **Company logo**: the reference invoice's circular "TiS" gradient logo mark could not
+  be extracted as a reusable image asset in this environment (it was only ever seen
+  inline in an uploaded screenshot, not as a separate file), so the print header keeps
+  the existing simple brand-icon block rather than approximating that specific graphic.
+  `Store.logoUrl` exists and is read by the header if the user later provides a real
+  logo file to store there.
+- **Verified**: the print document in English, Arabic, and Both modes (company header,
+  bilingual column headers/totals/footer, OMR amounts); the live Quotation list, detail,
+  form, and summary in both languages showing OMR with 3 decimals; the POS page's
+  catalog/cart/totals in OMR; and a full create → edit → status-change → delete
+  Quotation cycle plus a POS sale, all with correct 3-decimal totals and no console
+  errors.

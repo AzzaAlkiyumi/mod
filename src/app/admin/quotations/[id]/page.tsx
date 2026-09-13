@@ -61,7 +61,8 @@ function toFormInitialData(quotation: QuotationDetail): QuotationFormInitialData
 export default async function QuotationDetailPage({ params, searchParams }: PageProps) {
   const { id } = await params;
   const search = await searchParams;
-  const t = getDictionary(await getLocale());
+  const locale = await getLocale();
+  const t = getDictionary(locale);
 
   const quotation = await prisma.quotation.findUnique({
     where: { id },
@@ -88,5 +89,5 @@ export default async function QuotationDetailPage({ params, searchParams }: Page
     return <QuotationForm initial={toFormInitialData(quotation)} />;
   }
 
-  return <QuotationDetailView quotation={quotation} t={t} />;
+  return <QuotationDetailView quotation={quotation} t={t} locale={locale} />;
 }

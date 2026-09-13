@@ -20,13 +20,16 @@ import { ProductThumb } from "@/components/quotation/product-thumb";
 import { formatCurrency, formatDate } from "@/lib/utils";
 import type { QuotationDetail } from "@/lib/types";
 import type { Dictionary } from "@/i18n/dictionaries/en";
+import type { Locale } from "@/i18n/config";
 
 export function QuotationDetailView({
   quotation,
   t,
+  locale,
 }: {
   quotation: QuotationDetail;
   t: Dictionary;
+  locale: Locale;
 }) {
   return (
     <div className="flex flex-col gap-6 print:gap-4">
@@ -132,20 +135,20 @@ export function QuotationDetailView({
                         </TableCell>
                         <TableCell className="text-end">{Number(item.quantity)}</TableCell>
                         <TableCell className="text-end">
-                          {formatCurrency(item.unitPrice)}
+                          {formatCurrency(item.unitPrice, locale)}
                         </TableCell>
                         <TableCell className="text-end">
                           {Number(item.discountValue) > 0
                             ? item.discountType === "PERCENT"
                               ? `${Number(item.discountValue)}%`
-                              : formatCurrency(item.discountValue)
+                              : formatCurrency(item.discountValue, locale)
                             : "—"}
                         </TableCell>
                         <TableCell className="text-end">
                           {Number(item.taxRate) > 0 ? `${Number(item.taxRate)}%` : "—"}
                         </TableCell>
                         <TableCell className="text-end font-medium">
-                          {formatCurrency(item.lineTotal)}
+                          {formatCurrency(item.lineTotal, locale)}
                         </TableCell>
                       </TableRow>
                     ))}
@@ -188,13 +191,13 @@ export function QuotationDetailView({
               <CardTitle>{t.detail.summaryTitle}</CardTitle>
             </CardHeader>
             <CardContent className="flex flex-col gap-3 text-sm">
-              <Row label={t.form.summary.subtotal} value={formatCurrency(quotation.subtotal)} />
-              <Row label={t.form.summary.discount} value={formatCurrency(quotation.discountTotal)} />
-              <Row label={t.form.summary.tax} value={formatCurrency(quotation.taxTotal)} />
+              <Row label={t.form.summary.subtotal} value={formatCurrency(quotation.subtotal, locale)} />
+              <Row label={t.form.summary.discount} value={formatCurrency(quotation.discountTotal, locale)} />
+              <Row label={t.form.summary.tax} value={formatCurrency(quotation.taxTotal, locale)} />
               <Separator />
               <div className="flex items-center justify-between text-base font-semibold">
                 <span>{t.form.summary.total}</span>
-                <span>{formatCurrency(quotation.total)}</span>
+                <span>{formatCurrency(quotation.total, locale)}</span>
               </div>
               {quotation.status === "CONVERTED" && (
                 <p className="mt-1 text-xs text-muted-foreground">

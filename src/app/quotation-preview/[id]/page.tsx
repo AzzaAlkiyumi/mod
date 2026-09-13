@@ -1,10 +1,8 @@
 /**
- * PREVIEW ONLY — deliberately outside `/admin` so it renders with no
- * sidebar/header chrome (closest to true print output) and does not
- * touch any file under `src/app/admin/quotations/*` or the real
- * Quotation page's print flow. Reads the same existing Quotation data
- * via the same Prisma client already used elsewhere — no new tables,
- * columns, or seed data.
+ * The real print/PDF destination for a quotation (linked from the Print
+ * button on `/admin/quotations/[id]` and the list's row actions).
+ * Deliberately outside `/admin` so it renders with no sidebar/header
+ * chrome (closest to true print output).
  */
 import Link from "next/link";
 

@@ -16,7 +16,21 @@ export interface PreviewQuotation {
   discountTotal: number;
   taxTotal: number;
   total: number;
-  store: { name: string };
+  store: {
+    name: string;
+    legalNameEn: string | null;
+    legalNameAr: string | null;
+    crNumber: string | null;
+    poBox: string | null;
+    countryEn: string | null;
+    countryAr: string | null;
+    addressEn: string | null;
+    addressAr: string | null;
+    vatNumber: string | null;
+    mobile: string | null;
+    email: string | null;
+    logoUrl: string | null;
+  };
   customer: { name: string; code: string; phone: string | null } | null;
   prospectName: string | null;
   prospectEmail: string | null;
@@ -42,7 +56,21 @@ export function toPreviewQuotation(quotation: QuotationDetail): PreviewQuotation
     discountTotal: Number(quotation.discountTotal),
     taxTotal: Number(quotation.taxTotal),
     total: Number(quotation.total),
-    store: { name: quotation.store.name },
+    store: {
+      name: quotation.store.name,
+      legalNameEn: quotation.store.legalNameEn,
+      legalNameAr: quotation.store.legalNameAr,
+      crNumber: quotation.store.crNumber,
+      poBox: quotation.store.poBox,
+      countryEn: quotation.store.countryEn,
+      countryAr: quotation.store.countryAr,
+      addressEn: quotation.store.addressEn,
+      addressAr: quotation.store.addressAr,
+      vatNumber: quotation.store.vatNumber,
+      mobile: quotation.store.mobile,
+      email: quotation.store.email,
+      logoUrl: quotation.store.logoUrl,
+    },
     customer: quotation.customer
       ? {
           name: quotation.customer.name,

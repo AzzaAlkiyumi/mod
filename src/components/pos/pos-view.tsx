@@ -41,8 +41,8 @@ interface CartLine {
   quantity: number;
 }
 
-function round2(value: number) {
-  return Math.round((value + Number.EPSILON) * 100) / 100;
+function round3(value: number) {
+  return Math.round((value + Number.EPSILON) * 1000) / 1000;
 }
 
 export function POSView({
@@ -54,7 +54,7 @@ export function POSView({
   stores: StoreOption[];
   defaultStoreId: string;
 }) {
-  const { t } = useDictionary();
+  const { t, locale } = useDictionary();
   const [query, setQuery] = useState("");
   const [barcode, setBarcode] = useState("");
   const [category, setCategory] = useState<string | null>(null);
@@ -128,9 +128,9 @@ export function POSView({
       tax += (gross * line.product.taxRate) / 100;
       subtotal += gross;
     }
-    subtotal = round2(subtotal);
-    tax = round2(tax);
-    return { subtotal, tax, total: round2(subtotal + tax) };
+    subtotal = round3(subtotal);
+    tax = round3(tax);
+    return { subtotal, tax, total: round3(subtotal + tax) };
   }, [cart]);
 
   async function handleCompleteSale() {
@@ -248,7 +248,7 @@ export function POSView({
                     <span className="text-sm font-medium leading-tight">{product.name}</span>
                     <span className="text-xs text-muted-foreground">SKU {product.sku}</span>
                   </div>
-                  <span className="text-sm font-semibold">{formatCurrency(product.price)}</span>
+                  <span className="text-sm font-semibold">{formatCurrency(product.price, locale)}</span>
                 </button>
               ))}
             </div>
@@ -284,7 +284,7 @@ export function POSView({
                   <div className="flex flex-1 flex-col overflow-hidden">
                     <span className="truncate text-sm font-medium">{line.product.name}</span>
                     <span className="text-xs text-muted-foreground">
-                      {formatCurrency(line.product.price)} / {line.product.unit}
+                      {formatCurrency(line.product.price, locale)} / {line.product.unit}
                     </span>
                   </div>
                   <div className="flex items-center gap-1">
@@ -377,15 +377,15 @@ export function POSView({
           <div className="flex flex-col gap-1 border-t border-border pt-3 text-sm">
             <div className="flex items-center justify-between text-muted-foreground">
               <span>{t.pos.summary.subtotal}</span>
-              <span>{formatCurrency(totals.subtotal)}</span>
+              <span>{formatCurrency(totals.subtotal, locale)}</span>
             </div>
             <div className="flex items-center justify-between text-muted-foreground">
               <span>{t.pos.summary.tax}</span>
-              <span>{formatCurrency(totals.tax)}</span>
+              <span>{formatCurrency(totals.tax, locale)}</span>
             </div>
             <div className="mt-1 flex items-center justify-between text-base font-semibold">
               <span>{t.pos.summary.total}</span>
-              <span>{formatCurrency(totals.total)}</span>
+              <span>{formatCurrency(totals.total, locale)}</span>
             </div>
           </div>
 

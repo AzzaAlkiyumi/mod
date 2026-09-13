@@ -18,7 +18,7 @@ export function QuotationSummary({
   total: number;
   pending?: boolean;
 }) {
-  const { t } = useDictionary();
+  const { t, locale } = useDictionary();
 
   return (
     <Card className="sticky top-6">
@@ -30,20 +30,20 @@ export function QuotationSummary({
       >
         <div className="flex items-center justify-between">
           <span className="text-muted-foreground">{t.form.summary.subtotal}</span>
-          <span>{formatCurrency(subtotal)}</span>
+          <span>{formatCurrency(subtotal, locale)}</span>
         </div>
         <div className="flex items-center justify-between">
           <span className="text-muted-foreground">{t.form.summary.discount}</span>
-          <span>{formatCurrency(discountTotal)}</span>
+          <span>{formatCurrency(discountTotal, locale)}</span>
         </div>
         <div className="flex items-center justify-between">
           <span className="text-muted-foreground">{t.form.summary.tax}</span>
-          <span>{formatCurrency(taxTotal)}</span>
+          <span>{formatCurrency(taxTotal, locale)}</span>
         </div>
         <Separator />
         <div className="flex items-center justify-between text-base font-semibold">
           <span>{t.form.summary.total}</span>
-          <span>{formatCurrency(total)}</span>
+          <span>{formatCurrency(total, locale)}</span>
         </div>
         <p className="mt-1 text-xs text-muted-foreground">{t.form.summary.note}</p>
       </CardContent>

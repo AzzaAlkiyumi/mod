@@ -50,7 +50,7 @@ export function QuotationItemRow({
   onChange: (next: DraftItem) => void;
   onRemove: () => void;
 }) {
-  const { t } = useDictionary();
+  const { t, locale } = useDictionary();
   const preview = computeLinePreview(item);
 
   return (
@@ -61,7 +61,7 @@ export function QuotationItemRow({
           <div className="flex flex-col">
             <span className="font-medium">{item.name}</span>
             <span className="text-xs text-muted-foreground">
-              SKU {item.sku} · {formatCurrency(item.unitPrice)} / {item.unit}
+              SKU {item.sku} · {formatCurrency(item.unitPrice, locale)} / {item.unit}
             </span>
             {error && <span className="text-xs text-destructive">{error}</span>}
           </div>
@@ -109,7 +109,7 @@ export function QuotationItemRow({
       <TableCell className="text-end text-muted-foreground">
         {item.taxRate > 0 ? `${item.taxRate}%` : "—"}
       </TableCell>
-      <TableCell className="text-end font-medium">{formatCurrency(preview.total)}</TableCell>
+      <TableCell className="text-end font-medium">{formatCurrency(preview.total, locale)}</TableCell>
       <TableCell>
         <Button
           type="button"

@@ -25,7 +25,7 @@ export function ProductSelector({
   onSelect: (product: ProductWithTax) => void;
   excludeIds: string[];
 }) {
-  const { t } = useDictionary();
+  const { t, locale } = useDictionary();
   const [query, setQuery] = useState("");
   const [barcode, setBarcode] = useState("");
   const [open, setOpen] = useState(false);
@@ -142,7 +142,7 @@ export function ProductSelector({
                           </span>
                         </span>
                         <span className="text-sm font-medium">
-                          {formatCurrency(product.price)}
+                          {formatCurrency(product.price, locale)}
                         </span>
                       </CommandItem>
                     );

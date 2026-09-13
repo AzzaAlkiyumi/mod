@@ -18,7 +18,8 @@ interface PageProps {
 }
 
 export default async function QuotationsPage({ searchParams }: PageProps) {
-  const t = getDictionary(await getLocale());
+  const locale = await getLocale();
+  const t = getDictionary(locale);
   const params = await searchParams;
   const status = typeof params.status === "string" ? params.status : undefined;
   const from = typeof params.from === "string" ? params.from : undefined;
@@ -77,7 +78,7 @@ export default async function QuotationsPage({ searchParams }: PageProps) {
           </Link>
         </div>
         <QuotationFilters />
-        <QuotationTable quotations={quotations} t={t} />
+        <QuotationTable quotations={quotations} t={t} locale={locale} />
       </Card>
     </div>
   );

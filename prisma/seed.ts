@@ -8,17 +8,36 @@ const prisma = new PrismaClient({ adapter });
 async function main() {
   await prisma.quotationItem.deleteMany();
   await prisma.quotation.deleteMany();
+  await prisma.saleItem.deleteMany();
+  await prisma.sale.deleteMany();
   await prisma.product.deleteMany();
   await prisma.tax.deleteMany();
   await prisma.customer.deleteMany();
   await prisma.user.deleteMany();
   await prisma.store.deleteMany();
 
+  // Real company/legal details, as given by the user (from their own TECHNICAL
+  // LINE / TIS invoice) — used on the Quotation print document's header. Both
+  // stores are branches of the same legal company, so both carry it.
+  const companyInfo = {
+    legalNameEn: "TECHNICAL LINE",
+    legalNameAr: null,
+    crNumber: "1614921",
+    poBox: "311",
+    countryEn: "Sultanate of Oman",
+    countryAr: "سلطنة عمان",
+    addressEn: "North Al Batinah, Sohar Al Waqibah",
+    addressAr: "شمال الباطنة، صحار الوقيبة",
+    vatNumber: "2238547",
+    mobile: "97295225",
+    email: "3zan901@gmail.com",
+  };
+
   const mainStore = await prisma.store.create({
-    data: { name: "Main Store", code: "MAIN", isDefault: true },
+    data: { name: "Main Store", code: "MAIN", isDefault: true, ...companyInfo },
   });
   const downtown = await prisma.store.create({
-    data: { name: "Downtown Branch", code: "DOWNTOWN" },
+    data: { name: "Downtown Branch", code: "DOWNTOWN", ...companyInfo },
   });
 
   const admin = await prisma.user.create({
@@ -38,8 +57,9 @@ async function main() {
     },
   });
 
+  // Oman's actual VAT rate is 5% (matches the reference invoice's "VAT 5%").
   const standardTax = await prisma.tax.create({
-    data: { name: "Standard VAT", rate: 15, isDefault: true },
+    data: { name: "Standard VAT", rate: 5, isDefault: true },
   });
   const zeroTax = await prisma.tax.create({
     data: { name: "Zero Rated", rate: 0 },

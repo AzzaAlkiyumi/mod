@@ -56,8 +56,8 @@ export interface CalcQuotationResult {
   total: number;
 }
 
-function round2(value: number) {
-  return Math.round((value + Number.EPSILON) * 100) / 100;
+function round3(value: number) {
+  return Math.round((value + Number.EPSILON) * 1000) / 1000;
 }
 
 function computeLineDiscount(gross: number, type: DiscountType, value: number) {
@@ -73,13 +73,13 @@ export function calculateQuotationTotals(
   let taxTotal = 0;
 
   const lines: CalcLineResult[] = input.lines.map((line) => {
-    const lineGross = round2(line.quantity * line.unitPrice);
-    const lineDiscount = round2(
+    const lineGross = round3(line.quantity * line.unitPrice);
+    const lineDiscount = round3(
       computeLineDiscount(lineGross, line.discountType, line.discountValue),
     );
-    const taxableAmount = round2(lineGross - lineDiscount);
-    const taxAmount = round2((taxableAmount * line.taxRate) / 100);
-    const lineTotal = round2(taxableAmount + taxAmount);
+    const taxableAmount = round3(lineGross - lineDiscount);
+    const taxAmount = round3((taxableAmount * line.taxRate) / 100);
+    const lineTotal = round3(taxableAmount + taxAmount);
 
     subtotal += lineGross;
     lineDiscountTotal += lineDiscount;
@@ -88,18 +88,18 @@ export function calculateQuotationTotals(
     return { ...line, lineGross, lineDiscount, taxableAmount, taxAmount, lineTotal };
   });
 
-  subtotal = round2(subtotal);
-  lineDiscountTotal = round2(lineDiscountTotal);
-  taxTotal = round2(taxTotal);
+  subtotal = round3(subtotal);
+  lineDiscountTotal = round3(lineDiscountTotal);
+  taxTotal = round3(taxTotal);
 
-  const quotationDiscount = round2(
+  const quotationDiscount = round3(
     input.discountType === "PERCENT"
       ? (subtotal * input.discountValue) / 100
       : Math.min(input.discountValue, Math.max(subtotal - lineDiscountTotal, 0)),
   );
 
-  const discountTotal = round2(lineDiscountTotal + quotationDiscount);
-  const total = round2(subtotal - discountTotal + taxTotal);
+  const discountTotal = round3(lineDiscountTotal + quotationDiscount);
+  const total = round3(subtotal - discountTotal + taxTotal);
 
   return { lines, subtotal, discountTotal, taxTotal, total };
 }

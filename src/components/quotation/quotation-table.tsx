@@ -13,13 +13,16 @@ import { QuotationRowActions } from "@/components/quotation/quotation-row-action
 import { formatCurrency, formatDate } from "@/lib/utils";
 import type { QuotationListItem } from "@/lib/types";
 import type { Dictionary } from "@/i18n/dictionaries/en";
+import type { Locale } from "@/i18n/config";
 
 export function QuotationTable({
   quotations,
   t,
+  locale,
 }: {
   quotations: QuotationListItem[];
   t: Dictionary;
+  locale: Locale;
 }) {
   if (quotations.length === 0) {
     return (
@@ -75,7 +78,7 @@ export function QuotationTable({
               <QuotationStatusBadge status={quotation.status} />
             </TableCell>
             <TableCell className="text-end font-medium">
-              {formatCurrency(quotation.total)}
+              {formatCurrency(quotation.total, locale)}
             </TableCell>
             <TableCell>
               <QuotationRowActions
