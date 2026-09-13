@@ -92,6 +92,10 @@ model Product {
   name          String
   unit          String          @default("pcs")
   price         Decimal         @db.Decimal(12, 2)
+  /// Product photo, same as shown in the reference site's catalog/POS grid
+  /// and cart. Set on the product itself (catalog data) — never uploaded
+  /// from within a quotation. Null when the product has no photo yet.
+  imageUrl      String?
   taxId         String?
   tax           Tax?            @relation(fields: [taxId], references: [id])
   createdAt     DateTime        @default(now())

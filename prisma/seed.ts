@@ -64,11 +64,12 @@ async function main() {
 
   const products = await Promise.all(
     [
-      { sku: "SKU-1001", barcode: "8901030875021", name: "Wireless Mouse", unit: "pcs", price: 12.99, taxId: standardTax.id },
-      { sku: "SKU-1002", barcode: "8901030875038", name: "Mechanical Keyboard", unit: "pcs", price: 45.5, taxId: standardTax.id },
+      { sku: "SKU-1001", barcode: "8901030875021", name: "Wireless Mouse", unit: "pcs", price: 12.99, taxId: standardTax.id, imageUrl: "/products/wireless-mouse.svg" },
+      { sku: "SKU-1002", barcode: "8901030875038", name: "Mechanical Keyboard", unit: "pcs", price: 45.5, taxId: standardTax.id, imageUrl: "/products/mechanical-keyboard.svg" },
+      // Intentionally left without an image to exercise the "no photo yet" placeholder path.
       { sku: "SKU-1003", barcode: "8901030875045", name: '24" LED Monitor', unit: "pcs", price: 129.0, taxId: standardTax.id },
-      { sku: "SKU-1004", barcode: "8901030875052", name: "USB-C Cable 1m", unit: "pcs", price: 4.25, taxId: zeroTax.id },
-      { sku: "SKU-1005", barcode: "8901030875069", name: "Laptop Stand", unit: "pcs", price: 22.0, taxId: standardTax.id },
+      { sku: "SKU-1004", barcode: "8901030875052", name: "USB-C Cable 1m", unit: "pcs", price: 4.25, taxId: zeroTax.id, imageUrl: "/products/usb-c-cable.svg" },
+      { sku: "SKU-1005", barcode: "8901030875069", name: "Laptop Stand", unit: "pcs", price: 22.0, taxId: standardTax.id, imageUrl: "/products/laptop-stand.svg" },
     ].map((p) => prisma.product.create({ data: p })),
   );
 

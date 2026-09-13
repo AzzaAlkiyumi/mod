@@ -161,6 +161,7 @@ export function QuotationForm({ initial }: { initial?: QuotationFormInitialData 
         name: product.name,
         sku: product.sku,
         unit: product.unit,
+        imageUrl: product.imageUrl,
         unitPrice: Number(product.price),
         taxRate: product.tax ? Number(product.tax.rate) : 0,
         quantity: 1,

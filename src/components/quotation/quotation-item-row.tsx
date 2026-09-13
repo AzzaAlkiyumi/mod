@@ -5,6 +5,7 @@ import { Trash2 } from "lucide-react";
 import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
 import { TableCell, TableRow } from "@/components/ui/table";
+import { ProductThumb } from "@/components/quotation/product-thumb";
 import {
   Select,
   SelectContent,
@@ -21,6 +22,7 @@ export interface DraftItem {
   name: string;
   sku: string;
   unit: string;
+  imageUrl?: string | null;
   unitPrice: number;
   taxRate: number;
   quantity: number;
@@ -54,12 +56,15 @@ export function QuotationItemRow({
   return (
     <TableRow>
       <TableCell>
-        <div className="flex flex-col">
-          <span className="font-medium">{item.name}</span>
-          <span className="text-xs text-muted-foreground">
-            SKU {item.sku} · {formatCurrency(item.unitPrice)} / {item.unit}
-          </span>
-          {error && <span className="text-xs text-destructive">{error}</span>}
+        <div className="flex items-center gap-2.5">
+          <ProductThumb src={item.imageUrl} alt={item.name} size={32} />
+          <div className="flex flex-col">
+            <span className="font-medium">{item.name}</span>
+            <span className="text-xs text-muted-foreground">
+              SKU {item.sku} · {formatCurrency(item.unitPrice)} / {item.unit}
+            </span>
+            {error && <span className="text-xs text-destructive">{error}</span>}
+          </div>
         </div>
       </TableCell>
       <TableCell className="w-24">

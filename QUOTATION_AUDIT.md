@@ -367,6 +367,7 @@ model Product {
   name String
   unit String @default("pcs")
   price Decimal @db.Decimal(12, 2)
+  imageUrl String?
   taxId String?
   tax Tax? @relation(fields: [taxId], references: [id])
   quotationItems QuotationItem[]
@@ -567,6 +568,37 @@ is also called out inline above where it's relevant):
   - Currency/date formatting itself (`formatCurrency`/`formatDate` in `src/lib/utils.ts`)
     stays locale-invariant — the reference UI shows plain `YYYY-MM-DD` dates and `$`
     amounts regardless of language, so no per-locale number formatting was introduced.
+- **Redesigned Print/PDF document** (`/quotation-preview/[id]`, rendered by
+  `src/components/quotation/preview/quotation-print-preview.tsx`), added at the user's
+  request after they supplied a reference invoice image (a Technical Line/TIS company
+  invoice) to model the layout on: A4-sized document, red in place of black for headings/
+  accents (scoped to this document only — the rest of the site's orange primary color is
+  untouched), items table with `Item / Description / Product Image / Qty / Unit Price /
+  VAT / Total With VAT` columns, single-language display that follows the site's current
+  locale (no English/Arabic mixing), and print-only CSS (`@page { size: A4; margin: 0 }`,
+  `print-color-adjust: exact` so background colors survive browsers that default to
+  stripping them, `break-inside: avoid` on rows). The Print button on the real Quotation
+  page/list (`quotation-detail-actions.tsx`, `quotation-row-actions.tsx`) opens this route
+  in a new tab, which auto-triggers `window.print()` on load — no intermediate preview
+  banner or manual toggle. Every value on the document is read from existing
+  Quotation/Customer/Store/Product data; nothing is invented.
+- **Product photo, tied to the Product record** (`Product.imageUrl`, added this round):
+  the reference site's real catalog/POS pages (confirmed by a second screen recording of
+  `hyper-pos.eshopweb.store/cashier`) show a small photo next to every product, with a
+  colored letter-avatar fallback for products that have none — so a product's image is
+  catalog data, not something uploaded per-quotation. This rebuild had **no** product
+  image storage at all (`Product` had no image field, and there is no product-catalog
+  admin page in this app — only `/api/products`, used by the quotation item search), so
+  a nullable `Product.imageUrl String?` was added (migration
+  `20260913082459_add_product_image_url`) — the smallest change that lets a quotation
+  show "the product's own photo" rather than a mockup. `src/components/quotation/
+  product-thumb.tsx` is the shared thumbnail (real `<img>`, or a neat dashed-border
+  placeholder icon when `imageUrl` is null) used everywhere a product appears in the
+  quotation flow: the product search dropdown, the selected-items row in the create/edit
+  form, the Items table on the quotation detail page, and the print/PDF document's
+  "Product Image" column. Demo products in `prisma/seed.ts` reference local SVG files
+  under `public/products/`; one seeded product is deliberately left without an
+  `imageUrl` to exercise the placeholder path.
 
 ## 15. Testing Results
 

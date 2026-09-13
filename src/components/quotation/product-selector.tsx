@@ -13,6 +13,7 @@ import {
 } from "@/components/ui/command";
 import { Popover, PopoverContent, PopoverAnchor } from "@/components/ui/popover";
 import { Input } from "@/components/ui/input";
+import { ProductThumb } from "@/components/quotation/product-thumb";
 import { formatCurrency } from "@/lib/utils";
 import { useDictionary } from "@/i18n/dictionary-context";
 import type { ProductWithTax } from "@/lib/types";
@@ -131,6 +132,7 @@ export function ProductSelector({
                           setOpen(false);
                         }}
                       >
+                        <ProductThumb src={product.imageUrl} alt={product.name} size={28} />
                         <span className="flex flex-1 flex-col">
                           <span>{product.name}</span>
                           <span className="text-xs text-muted-foreground">

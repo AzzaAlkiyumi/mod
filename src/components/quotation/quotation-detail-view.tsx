@@ -16,6 +16,7 @@ import {
 import { Separator } from "@/components/ui/separator";
 import { QuotationStatusBadge } from "@/components/quotation/quotation-status-badge";
 import { QuotationDetailActions } from "@/components/quotation/quotation-detail-actions";
+import { ProductThumb } from "@/components/quotation/product-thumb";
 import { formatCurrency, formatDate } from "@/lib/utils";
 import type { QuotationDetail } from "@/lib/types";
 import type { Dictionary } from "@/i18n/dictionaries/en";
@@ -115,11 +116,18 @@ export function QuotationDetailView({
                     {quotation.items.map((item) => (
                       <TableRow key={item.id}>
                         <TableCell>
-                          <div className="flex flex-col">
-                            <span className="font-medium">{item.product.name}</span>
-                            <span className="text-xs text-muted-foreground">
-                              SKU {item.product.sku}
-                            </span>
+                          <div className="flex items-center gap-2.5">
+                            <ProductThumb
+                              src={item.product.imageUrl}
+                              alt={item.product.name}
+                              size={32}
+                            />
+                            <div className="flex flex-col">
+                              <span className="font-medium">{item.product.name}</span>
+                              <span className="text-xs text-muted-foreground">
+                                SKU {item.product.sku}
+                              </span>
+                            </div>
                           </div>
                         </TableCell>
                         <TableCell className="text-end">{Number(item.quantity)}</TableCell>

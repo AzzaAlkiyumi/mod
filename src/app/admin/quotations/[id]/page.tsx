@@ -48,6 +48,7 @@ function toFormInitialData(quotation: QuotationDetail): QuotationFormInitialData
       name: item.product.name,
       sku: item.product.sku,
       unit: item.product.unit,
+      imageUrl: item.product.imageUrl,
       unitPrice: Number(item.unitPrice),
       taxRate: Number(item.taxRate),
       quantity: Number(item.quantity),

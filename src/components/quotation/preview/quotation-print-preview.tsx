@@ -217,12 +217,23 @@ export function QuotationPrintPreview({
                   <Td className="font-mono text-[10.5px] text-neutral-500">{item.product.sku}</Td>
                   <Td className="font-semibold">{item.product.name}</Td>
                   <Td>
-                    <div
-                      className="flex size-10 items-center justify-center rounded-md border border-dashed border-neutral-300 bg-neutral-50"
-                      title={s.noImage}
-                    >
-                      <ImageOff className="size-4 text-neutral-300" />
-                    </div>
+                    {item.product.imageUrl ? (
+                      // eslint-disable-next-line @next/next/no-img-element -- fixed-size print thumbnail, must render identically in the PDF/print document.
+                      <img
+                        src={item.product.imageUrl}
+                        alt={item.product.name}
+                        width={40}
+                        height={40}
+                        className="size-10 rounded-md border border-neutral-200 object-cover"
+                      />
+                    ) : (
+                      <div
+                        className="flex size-10 items-center justify-center rounded-md border border-dashed border-neutral-300 bg-neutral-50"
+                        title={s.noImage}
+                      >
+                        <ImageOff className="size-4 text-neutral-300" />
+                      </div>
+                    )}
                   </Td>
                   <Td align="end" mono>
                     {Number(item.quantity)}

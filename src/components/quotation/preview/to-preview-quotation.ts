@@ -27,7 +27,7 @@ export interface PreviewQuotation {
     unitPrice: number;
     taxRate: number;
     lineTotal: number;
-    product: { sku: string; name: string };
+    product: { sku: string; name: string; imageUrl: string | null };
   }[];
 }
 
@@ -59,7 +59,7 @@ export function toPreviewQuotation(quotation: QuotationDetail): PreviewQuotation
       unitPrice: Number(item.unitPrice),
       taxRate: Number(item.taxRate),
       lineTotal: Number(item.lineTotal),
-      product: { sku: item.product.sku, name: item.product.name },
+      product: { sku: item.product.sku, name: item.product.name, imageUrl: item.product.imageUrl },
     })),
   };
 }
