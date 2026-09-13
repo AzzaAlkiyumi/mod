@@ -5,17 +5,16 @@
  * search) — this preview is what a real /admin/products/new would become
  * once approved, not a modification of an existing page.
  *
- * Field set is grounded in a screen recording of the reference site's real
- * "New product" form (General tab); layout/hierarchy is modeled on a
- * separate "improved layout" reference image the user supplied. Reads only
- * existing Product/Tax data — no new tables, and the handful of proposed
- * new Product columns (bilingual name/description, brand, status flags)
- * are NOT yet applied to the schema; this preview uses local component
- * state so it can be reviewed without touching the database.
+ * Field set maps 1:1 to the real Product model (sku, barcode, name, unit,
+ * price, imageUrl, category, taxId), plus bilingual Name/Description
+ * fields shown together (no language toggle) per explicit direction —
+ * those are the only new columns proposed, not yet applied to the schema.
+ * Reads only existing Product/Tax data — no new tables. This preview uses
+ * local component state so it can be reviewed without touching the
+ * database or any other part of the app.
  */
 import { prisma } from "@/lib/prisma";
 import { ProductFormPreview } from "@/components/products/product-form-preview";
-import { getLocale } from "@/i18n/get-locale";
 
 export const dynamic = "force-dynamic";
 
@@ -30,14 +29,11 @@ export default async function ProductFormPreviewPage() {
   ).sort();
   const units = Array.from(new Set(products.map((p) => p.unit))).sort();
 
-  const locale = await getLocale();
-
   return (
     <ProductFormPreview
       categories={categories}
       units={units}
       taxes={taxes.map((t) => ({ id: t.id, name: t.name, rate: Number(t.rate) }))}
-      initialLang={locale}
     />
   );
 }
