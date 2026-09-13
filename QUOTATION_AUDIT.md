@@ -787,3 +787,34 @@ their answers, and what was built:
   catalog/cart/totals in OMR; and a full create → edit → status-change → delete
   Quotation cycle plus a POS sale, all with correct 3-decimal totals and no console
   errors.
+
+## 19. Add Product page — preview, then approved schema change
+
+Per explicit request, a redesigned "Add Product" form was built and iterated as an
+isolated preview (`/admin/product-preview/new`, `src/components/products/
+product-form-preview.tsx`) before touching any real code — there is still no real
+Products admin page in this app (the sidebar's "Products" link 404s; only
+`/api/products` exists, used by the Quotation/POS item search).
+
+After review, the user asked for one specific, scoped change beyond the existing
+`Product` schema: bilingual product name and description, entered manually (no
+auto-translation), with **both languages' fields shown together on the form — no
+language-switch toggle** (an earlier draft of the preview had one; it was removed per
+this feedback). Every other field the earlier draft had invented (Short description,
+Brand, Available-for-sale, Featured) was removed — they don't exist on `Product` and
+weren't asked for, so the preview now maps 1:1 to what's real plus exactly the two
+approved bilingual concepts.
+
+**Schema change (approved by the user before being applied)**: added `nameAr`,
+`descriptionEn`, `descriptionAr` — all nullable `String` — directly to the existing
+`Product` model. No new table. Migration
+`20260913185322_add_bilingual_product_name_description`. `descriptionEn`/`descriptionAr`
+are both new (no description field of any language existed on `Product` before), so
+both are optional; `nameAr` is optional since English `name` remains the only required
+name.
+
+**Deliberately not yet done, pending further direction**: the form still doesn't save
+for real (no POST endpoint uses the new columns yet, "Create product" simulates a
+save), and POS/Quotation product displays were left untouched (they only show `name`,
+never `nameAr`/description) — the user was explicit that POS and Quotation are out of
+scope for this change.

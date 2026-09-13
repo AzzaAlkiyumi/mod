@@ -119,6 +119,15 @@ model Product {
   sku           String          @unique
   barcode       String?         @unique
   name          String
+  /// Arabic product name, shown alongside the English `name` — entered
+  /// manually by the admin, never auto-translated. Added at the user's
+  /// explicit approval; see QUOTATION_AUDIT.md.
+  nameAr        String?
+  /// English/Arabic product description — same manual-entry, no
+  /// auto-translation rule as nameAr. Neither existed before; both are
+  /// optional since no product had a description at all previously.
+  descriptionEn String?
+  descriptionAr String?
   unit          String          @default("pcs")
   price         Decimal         @db.Decimal(12, 3)
   /// Product photo, same as shown in the reference site's catalog/POS grid
