@@ -42,7 +42,9 @@ function useBreadcrumb(t: Dictionary) {
       href: isDetailRoute ? navItem.href : undefined,
     });
     if (pathname.endsWith("/new")) {
-      crumbs.push({ label: t.form.newTitle });
+      crumbs.push({
+        label: navItem.key === "products" ? t.products.form.newTitle : t.form.newTitle,
+      });
     } else if (isDetailRoute) {
       crumbs.push({ label: t.detail.details.title });
     }

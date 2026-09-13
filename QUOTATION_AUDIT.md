@@ -788,33 +788,71 @@ their answers, and what was built:
   Quotation cycle plus a POS sale, all with correct 3-decimal totals and no console
   errors.
 
-## 19. Add Product page — preview, then approved schema change
+## 19. Real Products admin page — list + create, built on the approved schema change
 
-Per explicit request, a redesigned "Add Product" form was built and iterated as an
-isolated preview (`/admin/product-preview/new`, `src/components/products/
-product-form-preview.tsx`) before touching any real code — there is still no real
-Products admin page in this app (the sidebar's "Products" link 404s; only
-`/api/products` exists, used by the Quotation/POS item search).
+Per explicit request, a redesigned "Add Product" form was first built and iterated as
+an isolated preview (`/admin/product-preview/new`,
+`src/components/products/product-form-preview.tsx`) before touching any real code —
+at that point there was no real Products admin page in this app at all (the sidebar's
+"Products" link 404s; only `/api/products` existed, used by the Quotation/POS item
+search).
 
-After review, the user asked for one specific, scoped change beyond the existing
-`Product` schema: bilingual product name and description, entered manually (no
+After review, the user approved one specific, scoped schema change beyond the existing
+`Product` model: bilingual product name and description, entered manually (no
 auto-translation), with **both languages' fields shown together on the form — no
-language-switch toggle** (an earlier draft of the preview had one; it was removed per
-this feedback). Every other field the earlier draft had invented (Short description,
-Brand, Available-for-sale, Featured) was removed — they don't exist on `Product` and
-weren't asked for, so the preview now maps 1:1 to what's real plus exactly the two
-approved bilingual concepts.
+language-switch toggle**. Every field the earlier draft had invented beyond what
+already exists (Short description, Brand, Available-for-sale, Featured) was removed.
 
-**Schema change (approved by the user before being applied)**: added `nameAr`,
-`descriptionEn`, `descriptionAr` — all nullable `String` — directly to the existing
-`Product` model. No new table. Migration
-`20260913185322_add_bilingual_product_name_description`. `descriptionEn`/`descriptionAr`
-are both new (no description field of any language existed on `Product` before), so
-both are optional; `nameAr` is optional since English `name` remains the only required
-name.
+**Schema change**: added `nameAr`, `descriptionEn`, `descriptionAr` — all nullable
+`String` — directly to the existing `Product` model. No new table. Migration
+`20260913185322_add_bilingual_product_name_description`.
 
-**Deliberately not yet done, pending further direction**: the form still doesn't save
-for real (no POST endpoint uses the new columns yet, "Create product" simulates a
-save), and POS/Quotation product displays were left untouched (they only show `name`,
-never `nameAr`/description) — the user was explicit that POS and Quotation are out of
-scope for this change.
+**Real implementation (this round)**, per the user's follow-up approval to build the
+real thing at the existing, nav-linked location (`/admin/products`, already present in
+`nav-config.ts`) rather than a separate path:
+
+- `POST /api/products` (added to the existing `route.ts`, which already had `GET` —
+  used unchanged by Quotation/POS item search): validates via
+  `src/lib/validations/product.ts` (Zod), auto-generates a sequential SKU
+  (`src/lib/product-sku.ts`, mirrors `generateQuotationNumber()`/`generateSaleNumber()`)
+  when left blank, verifies an optional `taxId` still exists, and returns a friendly
+  409 on a duplicate SKU/barcode (Prisma `P2002`).
+- `/admin/products` — real list page (server component): table of real products
+  (thumbnail, English + Arabic name, SKU, category, unit, tax, price), category filter,
+  and search by name/SKU/barcode. Read-only — no edit/delete, since none was requested.
+  Reuses the same `Table` primitive and list/filter/loading/error shell pattern as the
+  Quotations list.
+- `/admin/products/new` — real create page. The preview component was promoted into
+  `src/components/products/product-form.tsx`, wired to a real `fetch("/api/products",
+  { method: "POST" })` call in place of the preview's simulated `setTimeout`, with real
+  loading/success/error states and the 409-duplicate case surfaced as a toast. Strings
+  moved out of the preview's local `STRINGS` object into the global i18n dictionaries
+  (`t.products.list` / `t.products.form` in `en.ts`/`ar.ts`), matching how every other
+  page in the app is translated.
+- The preview route and component (`/admin/product-preview/new`,
+  `product-form-preview.tsx`) were removed now that the real page replaces them —
+  there is exactly one Add Product page in the app, at the existing nav-linked path.
+- Fixed a pre-existing breadcrumb bug surfaced by adding a second `/new` route:
+  `app-header.tsx`'s breadcrumb hard-coded the Quotation form's "New quotation" title
+  for any path ending in `/new`. Made it section-aware so `/admin/products/new` shows
+  "New product" (Arabic: "منتج جديد") instead.
+
+**Verified this round** (fresh `prisma generate` + dev server restart was required
+first — the running dev server predated the migration and still had the stale
+generated Prisma client, which briefly caused a 500 on save with "Unknown argument
+`nameAr`"; this is the same stale-client class of issue noted elsewhere in this
+document, not a code defect): created a product with English + Arabic name and
+description via the real form, confirmed it saves (auto-generated SKU `PRD-000009`)
+and appears in the products list without duplication; confirmed client-side validation
+blocks an empty submit with the highlighted-fields message; repeated the create flow
+under `NEXT_LOCALE=ar` and confirmed full RTL layout, `dir="rtl"` on the document, and
+the Arabic name/description round-tripping correctly; confirmed no horizontal page
+scroll on a 390px mobile viewport for both the list and the create form (the table's
+own internal `overflow-x-auto` scroll container is identical to the pre-existing
+Quotations table, not a new behavior); confirmed `/admin/quotations` and `/admin/pos`
+both still return 200 with zero console/page errors — neither was modified beyond the
+shared, backward-compatible `GET /api/products` route file gaining an unrelated `POST`
+export.
+
+`npx tsc --noEmit` and `npm run lint` were run clean after every file change in this
+round.

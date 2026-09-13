@@ -1,22 +1,8 @@
 "use client";
 
-/**
- * PREVIEW of the Add Product form — see the header comment in
- * app/admin/product-preview/new/page.tsx for full context. Nothing here
- * saves to the database yet: "Create product" simulates a save (loading →
- * success) so the UX can be reviewed, but no request is actually sent —
- * there's no real endpoint for it, and the new columns this would need
- * (nameAr, descriptionEn, descriptionAr) are not yet on the schema.
- *
- * Scope, per explicit direction: only Name and Description get bilingual
- * (English + Arabic, both fields visible together — no language toggle).
- * Every other field maps 1:1 to what already exists on Product (sku,
- * barcode, name, unit, price, imageUrl, category, taxId) — nothing was
- * added beyond that (no short description, brand, or status flags).
- */
-
 import { useState } from "react";
 import Link from "next/link";
+import { useRouter } from "next/navigation";
 import { ArrowLeft, ImageOff, Loader2, RefreshCw, X } from "lucide-react";
 import { toast } from "sonner";
 
@@ -36,122 +22,6 @@ import { formatCurrency } from "@/lib/utils";
 import { useDictionary } from "@/i18n/dictionary-context";
 
 const COMMON_UNITS = ["pcs", "kg", "g", "L", "ml", "box", "pack", "set"];
-
-const STRINGS = {
-  en: {
-    dir: "ltr" as const,
-    previewBanner: "Preview page — not yet wired to a real save; the actual Add Product page is unaffected.",
-    back: "Back",
-    title: "New product",
-    subtitle: "Catalog of everything you sell — name it once, ring it everywhere.",
-    discard: "Discard",
-    discardedToast: "Form cleared",
-    create: "Create product",
-    creating: "Creating…",
-    requiredBanner: "Required fields",
-    nameEn: "Product name — English",
-    nameEnPlaceholder: "e.g. Coca-Cola 330ml Can",
-    nameAr: "Product name — Arabic",
-    nameArPlaceholder: "مثال: كوكاكولا 330 مل",
-    category: "Category",
-    categoryPlaceholder: "Choose or type a category",
-    unit: "Sold by (unit)",
-    unitPlaceholder: "Choose a unit",
-    unitOther: "Other (type custom)",
-    unitCustomPlaceholder: "e.g. dozen",
-    unitHint: "No unit is pre-filled — pick one on purpose.",
-    price: "Price",
-    pricePlaceholder: "0.000",
-    taxLabel: "Tax",
-    taxNone: "No tax",
-    productTypeTitle: "Product type",
-    productTypeValue: "Simple — single SKU, single price",
-    productTypeHint:
-      "Variant and Kit product types aren't supported yet — every product is Simple for now.",
-    descriptionTitle: "Description",
-    descriptionSubtitle: "Optional. Shown inside the back office only.",
-    descriptionEn: "Description — English",
-    descriptionEnPlaceholder: "Notes about this product, in English",
-    descriptionAr: "Description — Arabic",
-    descriptionArPlaceholder: "ملاحظات عن هذا المنتج، بالعربية",
-    identifiersTitle: "Identifiers",
-    identifiersSubtitle: "Optional — leave blank to auto-generate.",
-    sku: "SKU",
-    skuPlaceholder: "Leave blank to auto-generate",
-    barcode: "Barcode",
-    barcodePlaceholder: "Scan, enter, or generate",
-    generate: "Generate",
-    imageTitle: "Product image",
-    imageSubtitle: "Optional. Paste a direct image link (JPG, PNG, or WebP).",
-    imageUrlPlaceholder: "https://...",
-    removeImage: "Remove image",
-    noImage: "No image",
-    errors: {
-      nameEn: "English product name is required",
-      category: "Category is required",
-      unit: "Choose a unit",
-      price: "Enter a valid price",
-    },
-    createdToast: (name: string) => `"${name}" created`,
-    fixErrors: "Fix the highlighted required fields",
-  },
-  ar: {
-    dir: "rtl" as const,
-    previewBanner: "صفحة معاينة — غير مربوطة بعد بحفظ حقيقي؛ صفحة إضافة المنتج الفعلية لم تتأثر.",
-    back: "رجوع",
-    title: "منتج جديد",
-    subtitle: "كتالوج كل ما تبيعه — سمِّه مرة واحدة، واستخدمه في كل مكان.",
-    discard: "تجاهل",
-    discardedToast: "تم مسح النموذج",
-    create: "إنشاء المنتج",
-    creating: "جارٍ الإنشاء…",
-    requiredBanner: "الحقول المطلوبة",
-    nameEn: "اسم المنتج — إنجليزي",
-    nameEnPlaceholder: "e.g. Coca-Cola 330ml Can",
-    nameAr: "اسم المنتج — عربي",
-    nameArPlaceholder: "مثال: كوكاكولا 330 مل",
-    category: "الفئة",
-    categoryPlaceholder: "اختر أو اكتب فئة",
-    unit: "يُباع حسب (الوحدة)",
-    unitPlaceholder: "اختر وحدة",
-    unitOther: "أخرى (اكتب وحدة مخصصة)",
-    unitCustomPlaceholder: "مثال: دزينة",
-    unitHint: "لا توجد وحدة معبأة مسبقًا — اخترها بنفسك عن قصد.",
-    price: "السعر",
-    pricePlaceholder: "0.000",
-    taxLabel: "الضريبة",
-    taxNone: "بدون ضريبة",
-    productTypeTitle: "نوع المنتج",
-    productTypeValue: "بسيط — SKU واحد وسعر واحد",
-    productTypeHint: "أنواع المتغيرات والحزم غير مدعومة بعد — كل منتج بسيط حاليًا.",
-    descriptionTitle: "الوصف",
-    descriptionSubtitle: "اختياري. يظهر داخل المكتب الخلفي فقط.",
-    descriptionEn: "الوصف — إنجليزي",
-    descriptionEnPlaceholder: "Notes about this product, in English",
-    descriptionAr: "الوصف — عربي",
-    descriptionArPlaceholder: "ملاحظات عن هذا المنتج، بالعربية",
-    identifiersTitle: "المعرّفات",
-    identifiersSubtitle: "اختياري — اتركها فارغة للتوليد التلقائي.",
-    sku: "SKU",
-    skuPlaceholder: "اتركه فارغًا للتوليد التلقائي",
-    barcode: "الباركود",
-    barcodePlaceholder: "امسح، أدخل، أو ولّد",
-    generate: "توليد",
-    imageTitle: "صورة المنتج",
-    imageSubtitle: "اختياري. الصق رابط صورة مباشر (JPG أو PNG أو WebP).",
-    imageUrlPlaceholder: "https://...",
-    removeImage: "إزالة الصورة",
-    noImage: "لا توجد صورة",
-    errors: {
-      nameEn: "اسم المنتج بالإنجليزية مطلوب",
-      category: "الفئة مطلوبة",
-      unit: "اختر وحدة",
-      price: "أدخل سعرًا صحيحًا",
-    },
-    createdToast: (name: string) => `تم إنشاء "${name}"`,
-    fixErrors: "صحّح الحقول المطلوبة المظلّلة",
-  },
-};
 
 interface TaxOption {
   id: string;
@@ -174,7 +44,7 @@ const emptyForm = {
   imageUrl: "",
 };
 
-export function ProductFormPreview({
+export function ProductForm({
   categories,
   units,
   taxes,
@@ -183,9 +53,10 @@ export function ProductFormPreview({
   units: string[];
   taxes: TaxOption[];
 }) {
-  const { locale } = useDictionary();
+  const router = useRouter();
+  const { t, locale } = useDictionary();
+  const s = t.products.form;
   const dir = locale === "ar" ? "rtl" : "ltr";
-  const s = STRINGS[locale];
 
   const [form, setForm] = useState(emptyForm);
   const [errors, setErrors] = useState<Record<string, string>>({});
@@ -216,9 +87,40 @@ export function ProductFormPreview({
       return;
     }
     setSubmitting(true);
-    await new Promise((resolve) => setTimeout(resolve, 500));
-    setSubmitting(false);
-    toast.success(s.createdToast(form.nameEn));
+    try {
+      const res = await fetch("/api/products", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          name: form.nameEn.trim(),
+          nameAr: form.nameAr.trim() || undefined,
+          category: form.category.trim(),
+          unit: effectiveUnit.trim(),
+          price: form.price,
+          taxId: form.taxId || undefined,
+          sku: form.sku.trim() || undefined,
+          barcode: form.barcode.trim() || undefined,
+          descriptionEn: form.descriptionEn.trim() || undefined,
+          descriptionAr: form.descriptionAr.trim() || undefined,
+          imageUrl: form.imageUrl.trim() || undefined,
+        }),
+      });
+      const json = await res.json();
+      if (!res.ok) {
+        const fieldErrorList = Object.values(
+          (json?.error?.fieldErrors ?? {}) as Record<string, string[]>,
+        )[0];
+        const message = json?.error?.formErrors?.[0] ?? fieldErrorList?.[0] ?? s.createFailed;
+        throw new Error(message);
+      }
+      toast.success(s.createdToast(json.data.name));
+      router.push("/admin/products");
+      router.refresh();
+    } catch (err) {
+      toast.error(err instanceof Error ? err.message : s.createFailed);
+    } finally {
+      setSubmitting(false);
+    }
   }
 
   function handleDiscard() {
@@ -238,22 +140,18 @@ export function ProductFormPreview({
 
   return (
     <div dir={dir} className="flex flex-col gap-4">
-      <div className="rounded-lg border border-warning/30 bg-warning/10 px-4 py-2.5 text-xs text-warning">
-        {s.previewBanner}
-      </div>
-
       <div className="flex flex-col gap-4 sm:flex-row sm:items-start sm:justify-between">
         <div className="flex items-start gap-3">
           <Link
-            href="/admin/quotations"
+            href="/admin/products"
             className="mt-1 flex size-8 shrink-0 items-center justify-center rounded-md text-muted-foreground hover:bg-accent"
             aria-label={s.back}
           >
             <ArrowLeft className={dir === "rtl" ? "size-4 -scale-x-100" : "size-4"} />
           </Link>
           <div>
-            <h1 className="text-2xl font-semibold tracking-tight">{s.title}</h1>
-            <p className="mt-1 text-sm text-muted-foreground">{s.subtitle}</p>
+            <h1 className="text-2xl font-semibold tracking-tight">{s.newTitle}</h1>
+            <p className="mt-1 text-sm text-muted-foreground">{s.newSubtitle}</p>
           </div>
         </div>
         <div className="flex items-center gap-2">
@@ -499,7 +397,7 @@ export function ProductFormPreview({
         </CardHeader>
         <CardContent className="flex flex-col gap-3 sm:flex-row sm:items-start">
           {form.imageUrl ? (
-            // eslint-disable-next-line @next/next/no-img-element -- preview thumbnail for a pasted URL.
+            // eslint-disable-next-line @next/next/no-img-element -- thumbnail preview for a pasted URL.
             <img
               src={form.imageUrl}
               alt=""
