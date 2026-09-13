@@ -370,8 +370,11 @@ const ar = {
       barcodePlaceholder: "امسح، أدخل، أو ولّد",
       generate: "توليد",
       imageTitle: "صورة المنتج",
-      imageSubtitle: "اختياري. الصق رابط صورة مباشر (JPG أو PNG أو WebP).",
+      imageSubtitle: "اختياري. ارفع ملفًا أو الصق رابط صورة مباشر (JPG أو PNG أو WebP).",
       imageUrlPlaceholder: "https://...",
+      uploadImage: "رفع",
+      uploading: "جارٍ الرفع…",
+      uploadFailed: "فشل رفع الصورة",
       removeImage: "إزالة الصورة",
       noImage: "لا توجد صورة",
       errors: {

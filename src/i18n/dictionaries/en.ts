@@ -362,8 +362,11 @@ const en = {
       barcodePlaceholder: "Scan, enter, or generate",
       generate: "Generate",
       imageTitle: "Product image",
-      imageSubtitle: "Optional. Paste a direct image link (JPG, PNG, or WebP).",
+      imageSubtitle: "Optional. Upload a file or paste a direct image link (JPG, PNG, or WebP).",
       imageUrlPlaceholder: "https://...",
+      uploadImage: "Upload",
+      uploading: "Uploading…",
+      uploadFailed: "Failed to upload image",
       removeImage: "Remove image",
       noImage: "No image",
       errors: {

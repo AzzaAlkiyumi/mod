@@ -1,9 +1,9 @@
 "use client";
 
-import { useState } from "react";
+import { useRef, useState } from "react";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
-import { ArrowLeft, ImageOff, Loader2, RefreshCw, X } from "lucide-react";
+import { ArrowLeft, ImageOff, Loader2, RefreshCw, Upload, X } from "lucide-react";
 import { toast } from "sonner";
 
 import { Button } from "@/components/ui/button";
@@ -61,6 +61,8 @@ export function ProductForm({
   const [form, setForm] = useState(emptyForm);
   const [errors, setErrors] = useState<Record<string, string>>({});
   const [submitting, setSubmitting] = useState(false);
+  const [uploading, setUploading] = useState(false);
+  const fileInputRef = useRef<HTMLInputElement>(null);
 
   function set<K extends keyof typeof emptyForm>(key: K, value: (typeof emptyForm)[K]) {
     setForm((prev) => ({ ...prev, [key]: value }));
@@ -136,6 +138,28 @@ export function ProductForm({
   function generateBarcode() {
     const digits = Array.from({ length: 12 }, () => Math.floor(Math.random() * 10)).join("");
     set("barcode", digits);
+  }
+
+  async function handleFileSelected(e: React.ChangeEvent<HTMLInputElement>) {
+    const file = e.target.files?.[0];
+    e.target.value = "";
+    if (!file) return;
+
+    setUploading(true);
+    try {
+      const body = new FormData();
+      body.append("file", file);
+      const res = await fetch("/api/uploads/products", { method: "POST", body });
+      const json = await res.json();
+      if (!res.ok) {
+        throw new Error(json?.error?.formErrors?.[0] ?? s.uploadFailed);
+      }
+      set("imageUrl", json.data.url);
+    } catch (err) {
+      toast.error(err instanceof Error ? err.message : s.uploadFailed);
+    } finally {
+      setUploading(false);
+    }
   }
 
   return (
@@ -409,12 +433,35 @@ export function ProductForm({
             </div>
           )}
           <div className="flex flex-1 flex-col gap-2">
-            <Input
-              value={form.imageUrl}
-              onChange={(e) => set("imageUrl", e.target.value)}
-              placeholder={s.imageUrlPlaceholder}
-              dir="ltr"
-            />
+            <div className="flex gap-1.5">
+              <Input
+                value={form.imageUrl}
+                onChange={(e) => set("imageUrl", e.target.value)}
+                placeholder={s.imageUrlPlaceholder}
+                dir="ltr"
+              />
+              <input
+                ref={fileInputRef}
+                type="file"
+                accept="image/jpeg,image/png,image/webp"
+                className="hidden"
+                onChange={handleFileSelected}
+              />
+              <Button
+                type="button"
+                variant="outline"
+                className="shrink-0"
+                disabled={uploading}
+                onClick={() => fileInputRef.current?.click()}
+              >
+                {uploading ? (
+                  <Loader2 className="size-4 animate-spin" />
+                ) : (
+                  <Upload className="size-4" />
+                )}
+                {uploading ? s.uploading : s.uploadImage}
+              </Button>
+            </div>
             {form.imageUrl && (
               <Button
                 type="button"
