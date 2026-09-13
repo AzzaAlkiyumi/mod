@@ -856,3 +856,36 @@ export.
 
 `npx tsc --noEmit` and `npm run lint` were run clean after every file change in this
 round.
+
+## 20. Quotation print preview now shows a product's Arabic name/description
+
+Follow-up, explicitly approved before touching this file: the user pointed out that
+switching a quotation's print preview to Arabic left the line-item "Description"
+column showing the product's English name — the print preview
+(`quotation-print-preview.tsx`) had never been updated to use `Product.nameAr`/
+`descriptionAr` after those columns were added in §19.
+
+**Scope, exactly as approved**: only this print document changed — no schema,
+Quotation calculation, POS, or any other Quotation UI was touched.
+
+- Arabic mode (`ar`): the line item now shows `product.nameAr` (falling back to the
+  English `name`, unchanged, for a product with no Arabic name) as the bold line, plus
+  `product.descriptionAr` as a small muted line beneath it when present.
+- "Both" mode: shows the site-language name first (bold) with the other language
+  stacked beneath it (muted) — same convention this file already used for the store's
+  bilingual address/country fields — plus the Arabic description if the product has
+  one.
+- English mode (`en`): byte-for-byte unchanged — no description line was shown before
+  and none is added now, per the user's explicit request to leave untranslated/English
+  behavior exactly as it was.
+- `to-preview-quotation.ts`'s `PreviewQuotation` type and mapper were extended to pass
+  `nameAr`/`descriptionEn`/`descriptionAr` through (the underlying Prisma query already
+  fetches the full `Product` row via `include`, so no query changes were needed).
+
+**Verified**: created a real quotation against a product with both `nameAr` and
+`descriptionAr` set and confirmed Arabic mode shows the Arabic name + description,
+"Both" mode shows the bilingual stack, and English mode is identical to before;
+created a second quotation against a seeded product with no Arabic translation and
+confirmed Arabic mode falls back to the English name with no extra description line,
+matching the exact pre-change behavior for untranslated products. `npx tsc --noEmit`
+and `npm run lint` both clean.

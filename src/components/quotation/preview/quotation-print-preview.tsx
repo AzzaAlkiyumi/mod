@@ -154,6 +154,34 @@ function trText(mode: Mode, primaryLang: Lang, pick: (s: PrintStrings) => string
   return `${pick(STRINGS[primaryLang])} / ${pick(STRINGS[secondaryLang])}`;
 }
 
+/** Product name for the printed line item. Arabic mode (and the Arabic side
+ * of "both") shows the product's own `nameAr` when the admin has entered
+ * one; a product without an Arabic name keeps showing its English name
+ * exactly as before — there is no machine translation. */
+function pickItemName(
+  mode: Mode,
+  initialLang: Lang,
+  product: { name: string; nameAr: string | null },
+): { primary: string; secondary: string | null } {
+  if (mode === "en") return { primary: product.name, secondary: null };
+  if (mode === "ar") return { primary: product.nameAr || product.name, secondary: null };
+  if (!product.nameAr) return { primary: product.name, secondary: null };
+  return initialLang === "ar"
+    ? { primary: product.nameAr, secondary: product.name }
+    : { primary: product.name, secondary: product.nameAr };
+}
+
+/** Product description for the printed line item — only ever the language(s)
+ * that actually exist on the product; English mode is unchanged (no
+ * description was shown there before this). */
+function pickItemDescription(
+  mode: Mode,
+  product: { descriptionEn: string | null; descriptionAr: string | null },
+): string | null {
+  if (mode === "ar" || mode === "both") return product.descriptionAr;
+  return null;
+}
+
 export function QuotationPrintPreview({
   quotation,
   initialLang,
@@ -355,10 +383,27 @@ export function QuotationPrintPreview({
               </tr>
             </thead>
             <tbody>
-              {quotation.items.map((item) => (
+              {quotation.items.map((item) => {
+                const itemName = pickItemName(mode, initialLang, item.product);
+                const itemDescription = pickItemDescription(mode, item.product);
+                return (
                 <tr key={item.id} style={{ breakInside: "avoid" }}>
                   <Td className="font-mono text-[10.5px] text-neutral-500">{item.product.sku}</Td>
-                  <Td className="font-semibold">{item.product.name}</Td>
+                  <Td>
+                    <div className="flex flex-col gap-0.5">
+                      <span className="font-semibold">{itemName.primary}</span>
+                      {itemName.secondary && (
+                        <span className="text-[0.85em] font-normal opacity-70">
+                          {itemName.secondary}
+                        </span>
+                      )}
+                      {itemDescription && (
+                        <span className="text-[0.85em] font-normal text-neutral-500">
+                          {itemDescription}
+                        </span>
+                      )}
+                    </div>
+                  </Td>
                   <Td>
                     {item.product.imageUrl ? (
                       // eslint-disable-next-line @next/next/no-img-element -- fixed-size print thumbnail, must render identically in the PDF/print document.
@@ -391,7 +436,8 @@ export function QuotationPrintPreview({
                     {formatCurrency(item.lineTotal, currencyLocale)}
                   </Td>
                 </tr>
-              ))}
+                );
+              })}
             </tbody>
           </table>
 
