@@ -1,0 +1,18 @@
+-- AlterTable
+ALTER TABLE "Product" ADD COLUMN     "availableForSale" BOOLEAN NOT NULL DEFAULT true,
+ADD COLUMN     "costPrice" DECIMAL(12,3),
+ADD COLUMN     "drugSchedule" TEXT NOT NULL DEFAULT 'NOT_SCHEDULED',
+ADD COLUMN     "expiryDate" TIMESTAMP(3),
+ADD COLUMN     "featured" BOOLEAN NOT NULL DEFAULT false,
+ADD COLUMN     "genericName" TEXT,
+ADD COLUMN     "hsnCode" TEXT,
+ADD COLUMN     "manufacturer" TEXT,
+ADD COLUMN     "mrp" DECIMAL(12,3),
+ADD COLUMN     "priceIncludesTax" BOOLEAN NOT NULL DEFAULT false,
+ADD COLUMN     "reorderAt" INTEGER,
+ADD COLUMN     "reorderQuantity" INTEGER,
+ADD COLUMN     "shortDescription" TEXT,
+ADD COLUMN     "soldByWeight" BOOLEAN NOT NULL DEFAULT false,
+ADD COLUMN     "trackBatches" BOOLEAN NOT NULL DEFAULT false,
+ADD COLUMN     "trackExpiry" BOOLEAN NOT NULL DEFAULT false,
+ADD COLUMN     "trackStock" BOOLEAN NOT NULL DEFAULT true;
