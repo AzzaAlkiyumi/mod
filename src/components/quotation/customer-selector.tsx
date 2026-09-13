@@ -31,11 +31,18 @@ export interface CustomerOption {
 export function CustomerSelector({
   value,
   onChange,
+  emptyLabel,
 }: {
   value: CustomerOption | null;
   onChange: (customer: CustomerOption | null) => void;
+  /** Label shown for "no customer selected", both as the trigger placeholder
+   * and the clear option. Defaults to the quotation form's "use prospect
+   * details" copy; pass something like "Walk-in customer" for a context
+   * (e.g. POS) that has no prospect-details fields of its own. */
+  emptyLabel?: string;
 }) {
   const { t } = useDictionary();
+  const empty = emptyLabel ?? t.form.details.useProspectDetails;
   const [open, setOpen] = useState(false);
   const [query, setQuery] = useState("");
   const [customers, setCustomers] = useState<CustomerOption[]>([]);
@@ -74,7 +81,7 @@ export function CustomerSelector({
           <span className={cn("truncate", !value && "text-muted-foreground")}>
             {value
               ? `${value.name} · ${value.phone ?? value.code}`
-              : t.form.details.useProspectDetails}
+              : empty}
           </span>
           <ChevronsUpDown className="size-4 shrink-0 opacity-50" />
         </Button>
@@ -97,7 +104,7 @@ export function CustomerSelector({
                 }}
               >
                 <Check className={cn("size-4", value ? "opacity-0" : "opacity-100")} />
-                {t.form.details.useProspectDetails}
+                {empty}
               </CommandItem>
               {customers.map((customer) => (
                 <CommandItem

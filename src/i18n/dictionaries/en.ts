@@ -257,6 +257,46 @@ const en = {
     fallbackMessage: "An unexpected error occurred while loading quotations.",
     tryAgain: "Try again",
   },
+  pos: {
+    title: "Point of Sale",
+    subtitle: "Search or browse the catalog, build an order, and take payment.",
+    searchPlaceholder: "Search products, SKU, or barcode...",
+    scanBarcode: "Scan a product barcode",
+    allCategories: "All",
+    noProductsFound: "No products found.",
+    addedToast: (name: string) => `${name} added`,
+    cart: {
+      title: "Order",
+      itemCount: (n: number) => `${n} item(s)`,
+      empty: "No items yet. Search or tap a product to begin.",
+      clear: "Clear",
+      remove: (name: string) => `Remove ${name}`,
+      decreaseQty: (name: string) => `Decrease quantity for ${name}`,
+      increaseQty: (name: string) => `Increase quantity for ${name}`,
+    },
+    customer: {
+      label: "Customer",
+      walkIn: "Walk-in customer",
+    },
+    store: "Store",
+    payment: {
+      label: "Payment method",
+      CASH: "Cash",
+      CARD: "Card",
+    },
+    summary: {
+      subtotal: "Subtotal",
+      tax: "Tax",
+      total: "Total due",
+    },
+    completeSale: "Complete sale",
+    completing: "Completing…",
+    toasts: {
+      completed: (number: string) => `${number} completed`,
+      failed: "Failed to complete sale",
+      emptyCart: "Add at least one product to complete a sale",
+    },
+  },
 };
 
 export default en;

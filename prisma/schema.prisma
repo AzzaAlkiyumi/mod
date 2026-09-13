@@ -32,6 +32,15 @@ enum DiscountType {
   FIXED
 }
 
+/// The reference POS's "Take payment" screen listed several options (Cash,
+/// Charge via QR, Card, UPI, Bank Transfer, Cheque); kept to the two most
+/// common ones here to match the "functional, not a full payment gateway"
+/// scope of this rebuild.
+enum PaymentMethod {
+  CASH
+  CARD
+}
+
 model Store {
   id         String       @id @default(cuid())
   name       String
@@ -40,6 +49,7 @@ model Store {
   createdAt  DateTime     @default(now())
   updatedAt  DateTime     @updatedAt
   quotations Quotation[]
+  sales      Sale[]
   users      User[]
 }
 
@@ -52,6 +62,7 @@ model User {
   store      Store?      @relation(fields: [storeId], references: [id])
   createdAt  DateTime    @default(now())
   quotations Quotation[]
+  sales      Sale[]
 }
 
 model Customer {
@@ -72,6 +83,7 @@ model Customer {
   createdAt       DateTime     @default(now())
   updatedAt       DateTime     @updatedAt
   quotations      Quotation[]
+  sales           Sale[]
 
   @@index([name])
   @@index([phone])
@@ -96,13 +108,19 @@ model Product {
   /// and cart. Set on the product itself (catalog data) — never uploaded
   /// from within a quotation. Null when the product has no photo yet.
   imageUrl      String?
+  /// Plain category label for the POS grid's filter chips (e.g. "Peripherals").
+  /// The reference site's categories are richer (per-category counts, colors),
+  /// but a flat string is enough for filtering without a whole category CRUD.
+  category      String?
   taxId         String?
   tax           Tax?            @relation(fields: [taxId], references: [id])
   createdAt     DateTime        @default(now())
   updatedAt     DateTime        @updatedAt
   quotationItems QuotationItem[]
+  saleItems     SaleItem[]
 
   @@index([name])
+  @@index([category])
 }
 
 model Quotation {
@@ -178,4 +196,57 @@ model QuotationItem {
   sortOrder     Int          @default(0)
 
   @@index([quotationId])
+}
+
+/// A completed POS sale, created directly from the /admin/pos "Cashier"
+/// screen. Unlike a Quotation (which never touches stock), a Sale is a
+/// real, immediate, one-shot transaction — no draft/status workflow, no
+/// header-level discount (kept out to match the "functional, not a full
+/// payment gateway" scope of this rebuild).
+model Sale {
+  id            String        @id @default(cuid())
+  number        String        @unique // e.g. SE-000001
+
+  storeId       String
+  store         Store         @relation(fields: [storeId], references: [id])
+
+  createdById   String
+  createdBy     User          @relation(fields: [createdById], references: [id])
+
+  // Optional — a walk-in sale has neither.
+  customerId    String?
+  customer      Customer?     @relation(fields: [customerId], references: [id])
+
+  paymentMethod PaymentMethod
+
+  subtotal      Decimal       @default(0) @db.Decimal(12, 2)
+  taxTotal      Decimal       @default(0) @db.Decimal(12, 2)
+  total         Decimal       @default(0) @db.Decimal(12, 2)
+
+  createdAt     DateTime      @default(now())
+
+  items         SaleItem[]
+
+  @@index([createdAt])
+  @@index([customerId])
+}
+
+model SaleItem {
+  id          String   @id @default(cuid())
+  saleId      String
+  sale        Sale     @relation(fields: [saleId], references: [id], onDelete: Cascade)
+
+  productId   String
+  product     Product  @relation(fields: [productId], references: [id])
+
+  quantity    Decimal  @db.Decimal(12, 3)
+  unitPrice   Decimal  @db.Decimal(12, 2)
+
+  taxRate     Decimal  @default(0) @db.Decimal(6, 3)
+  taxAmount   Decimal  @default(0) @db.Decimal(12, 2)
+  lineTotal   Decimal  @db.Decimal(12, 2) // quantity * unitPrice + taxAmount
+
+  sortOrder   Int      @default(0)
+
+  @@index([saleId])
 }

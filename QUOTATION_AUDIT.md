@@ -684,3 +684,43 @@ npx prisma db seed
 npm run dev
 # → http://localhost:3000/admin/quotations
 ```
+
+## 17. Point of Sale (`/admin/pos`) — beyond the original Quotation scope
+
+Everything above this section covers the original task (rebuild the Quotation page).
+The sidebar's other links (Dashboard, POS, Sales History, ...) were left as 404s by
+design — see §14 — until the user explicitly asked to build the POS page too. This
+section documents that addition.
+
+- **Scope chosen**: the user picked "fully functional, not a pixel-exact match" over a
+  minimal demo or a full match of the reference recording's payment sheet (QR/UPI/Bank
+  Transfer/Cheque, Hold orders, camera barcode scan, receipt printing). So `/admin/pos`
+  really persists a `Sale` to the database on checkout, but keeps the payment method to
+  a two-option `PaymentMethod` enum (`CASH`/`CARD`) and the barcode field to manual entry
+  (matching the precedent already set by the Quotation item search's own non-camera
+  barcode field).
+- **New database model**: `Sale`/`SaleItem`, mirroring `Quotation`/`QuotationItem`'s
+  shape but simpler — no draft/status workflow (a sale is an immediate, one-shot
+  transaction), no discount (kept out of scope). `Product.category` (nullable string)
+  was also added, purely so the POS grid has something to build filter chips from — a
+  full category CRUD was judged out of scope. Migration
+  `20260913084721_add_pos_sales`.
+- **UI**: `src/app/admin/pos/page.tsx` (server — fetches the full product catalog and
+  store list) renders `src/components/pos/pos-view.tsx` (client): search + manual
+  barcode entry, category filter chips, a product grid using the same `ProductThumb`
+  component the Quotation flow uses (so a product's photo is consistent everywhere it
+  appears), and a cart/checkout panel (quantity steppers, optional walk-in/customer
+  picker reusing `CustomerSelector`, store, payment method, totals, "Complete sale").
+  `CustomerSelector` gained an optional `emptyLabel` prop so POS can show "Walk-in
+  customer" instead of the Quotation form's "Use prospect details" copy, without
+  affecting the Quotation form's own default.
+- **API**: `POST /api/sales` (`src/app/api/sales/route.ts`) recomputes price/tax
+  server-side from the database (never trusts the client's copy), reusing
+  `calculateQuotationTotals` purely for its per-line math. `GET /api/products` gained
+  optional `category` and `take` (`take=all` for the POS grid's full-catalog fetch)
+  query parameters, additive to its existing quotation-item-search usage.
+- **Verified**: browsing/searching/category-filtering, add/remove/adjust-quantity,
+  checkout persists a `Sale`+`SaleItem`s with correct totals (spot-checked against the
+  database directly), the empty-cart guard disables "Complete sale", English/LTR and
+  Arabic/RTL both render and calculate correctly, and the Quotation form's own customer
+  selector was re-checked to confirm it still defaults to its original copy.

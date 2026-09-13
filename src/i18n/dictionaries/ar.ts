@@ -266,6 +266,46 @@ const ar = {
     fallbackMessage: "حدث خطأ غير متوقع أثناء تحميل عروض الأسعار.",
     tryAgain: "إعادة المحاولة",
   },
+  pos: {
+    title: "نقطة البيع",
+    subtitle: "ابحث أو تصفّح الكتالوج، وأنشئ طلبًا، واستلم الدفع.",
+    searchPlaceholder: "ابحث عن منتجات، SKU، أو باركود...",
+    scanBarcode: "امسح باركود المنتج",
+    allCategories: "الكل",
+    noProductsFound: "لم يتم العثور على منتجات.",
+    addedToast: (name: string) => `تمت إضافة ${name}`,
+    cart: {
+      title: "الطلب",
+      itemCount: (n: number) => `${n} عنصر`,
+      empty: "لا توجد عناصر بعد. ابحث أو اضغط على منتج للبدء.",
+      clear: "مسح",
+      remove: (name: string) => `إزالة ${name}`,
+      decreaseQty: (name: string) => `تقليل الكمية لـ ${name}`,
+      increaseQty: (name: string) => `زيادة الكمية لـ ${name}`,
+    },
+    customer: {
+      label: "العميل",
+      walkIn: "عميل نقدي",
+    },
+    store: "المتجر",
+    payment: {
+      label: "طريقة الدفع",
+      CASH: "نقدًا",
+      CARD: "بطاقة",
+    },
+    summary: {
+      subtotal: "المجموع الفرعي",
+      tax: "الضريبة",
+      total: "الإجمالي المستحق",
+    },
+    completeSale: "إتمام البيع",
+    completing: "جارٍ الإتمام…",
+    toasts: {
+      completed: (number: string) => `تم إتمام ${number}`,
+      failed: "فشل إتمام عملية البيع",
+      emptyCart: "أضف منتجًا واحدًا على الأقل لإتمام البيع",
+    },
+  },
 } satisfies Dictionary;
 
 export default ar;

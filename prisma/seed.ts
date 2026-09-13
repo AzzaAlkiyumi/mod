@@ -64,12 +64,15 @@ async function main() {
 
   const products = await Promise.all(
     [
-      { sku: "SKU-1001", barcode: "8901030875021", name: "Wireless Mouse", unit: "pcs", price: 12.99, taxId: standardTax.id, imageUrl: "/products/wireless-mouse.svg" },
-      { sku: "SKU-1002", barcode: "8901030875038", name: "Mechanical Keyboard", unit: "pcs", price: 45.5, taxId: standardTax.id, imageUrl: "/products/mechanical-keyboard.svg" },
+      { sku: "SKU-1001", barcode: "8901030875021", name: "Wireless Mouse", unit: "pcs", price: 12.99, taxId: standardTax.id, imageUrl: "/products/wireless-mouse.svg", category: "Peripherals" },
+      { sku: "SKU-1002", barcode: "8901030875038", name: "Mechanical Keyboard", unit: "pcs", price: 45.5, taxId: standardTax.id, imageUrl: "/products/mechanical-keyboard.svg", category: "Peripherals" },
       // Intentionally left without an image to exercise the "no photo yet" placeholder path.
-      { sku: "SKU-1003", barcode: "8901030875045", name: '24" LED Monitor', unit: "pcs", price: 129.0, taxId: standardTax.id },
-      { sku: "SKU-1004", barcode: "8901030875052", name: "USB-C Cable 1m", unit: "pcs", price: 4.25, taxId: zeroTax.id, imageUrl: "/products/usb-c-cable.svg" },
-      { sku: "SKU-1005", barcode: "8901030875069", name: "Laptop Stand", unit: "pcs", price: 22.0, taxId: standardTax.id, imageUrl: "/products/laptop-stand.svg" },
+      { sku: "SKU-1003", barcode: "8901030875045", name: '24" LED Monitor', unit: "pcs", price: 129.0, taxId: standardTax.id, category: "Displays" },
+      { sku: "SKU-1004", barcode: "8901030875052", name: "USB-C Cable 1m", unit: "pcs", price: 4.25, taxId: zeroTax.id, imageUrl: "/products/usb-c-cable.svg", category: "Cables" },
+      { sku: "SKU-1005", barcode: "8901030875069", name: "Laptop Stand", unit: "pcs", price: 22.0, taxId: standardTax.id, imageUrl: "/products/laptop-stand.svg", category: "Accessories" },
+      { sku: "SKU-1006", barcode: "8901030875076", name: "USB-C Hub 7-in-1", unit: "pcs", price: 34.0, taxId: standardTax.id, imageUrl: "/products/usb-hub.svg", category: "Peripherals" },
+      { sku: "SKU-1007", barcode: "8901030875083", name: "HD Webcam 1080p", unit: "pcs", price: 39.99, taxId: standardTax.id, imageUrl: "/products/webcam.svg", category: "Peripherals" },
+      { sku: "SKU-1008", barcode: "8901030875090", name: "HDMI Cable 2m", unit: "pcs", price: 7.5, taxId: zeroTax.id, category: "Cables" },
     ].map((p) => prisma.product.create({ data: p })),
   );
 
