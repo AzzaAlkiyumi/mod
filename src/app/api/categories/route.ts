@@ -20,7 +20,7 @@ export async function POST(request: Request) {
   const input = parsed.data;
 
   if (input.taxId) {
-    const tax = await prisma.tax.findUnique({ where: { id: input.taxId } });
+    const tax = await prisma.taxGroup.findUnique({ where: { id: input.taxId } });
     if (!tax) {
       return NextResponse.json(
         { error: { formErrors: ["Selected tax no longer exists"] } },

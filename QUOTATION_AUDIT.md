@@ -1064,3 +1064,133 @@ and at a 390px mobile viewport (two-pane layout stacks vertically, no horizontal
 scroll). `npx tsc --noEmit` and `npm run lint` clean throughout, including immediately
 after the schema/migration changes (which surfaced the exact set of now-broken call
 sites the research pass had predicted, one-for-one).
+
+## 23. Tax Management — Tax components, Tax groups, Tax classifications, Drug Schedules
+
+Driven by a fourth reference video (a screenshot of the reference site's "TAX
+MANAGEMENT" sidebar group prompted the request; the user then confirmed and sent a
+video for the real field content). Unlike Product Setup (§22), the user explicitly
+asked for this section to render as a **real expand/collapse sidebar dropdown**, not
+tabs on one page — so this is the first feature in the app to need that UI mechanism
+at all; nothing before it required a nested/collapsible nav group.
+
+Before writing any code, the two biggest risk points were flagged and approved
+up front: (1) a wholly new sidebar dropdown mechanism had to be built from scratch
+(`NavItem.children` in `nav-config.ts`, rendered by both `AppSidebar` and `MobileNav`),
+and (2) `TaxGroup` (see below) would **replace** the flat `Tax` model that
+Quotation/POS pricing already depended on via `taxId`/`tax.rate` — not sit alongside
+it — since the reference's Tax groups page is precisely "the thing actually applied to
+products," matching what `Tax` used to be. The user asked which scope was more
+correct; recommended and approved: build Tax classifications + Tax components + Tax
+groups + Drug Schedules together in one migration (since Tax groups is unusable
+without the other two, and Drug Schedules — despite sharing the sidebar group visually
+— has zero data dependency on the tax system), rather than splitting across sessions.
+
+**New sidebar mechanism** (`nav-config.ts`, `app-sidebar.tsx`, `mobile-nav.tsx`):
+`NavItem` gained an optional `children: NavChild[]` (a parent with children has no
+`href` of its own — it only toggles). Both sidebar components render a `children` item
+as a button with a chevron that expands/collapses an indented child list, auto-opens
+when the current route matches a child (and while the sidebar search box has a query,
+so a matching child is never hidden behind a collapsed parent), and is otherwise
+identical in visual treatment to a plain link. "Tax Management" is the only group that
+uses this so far; every other sidebar item is still a plain link, `Product Setup`
+included (deliberately, per §22).
+
+**Schema — `Tax` replaced by `TaxGroup` (same `taxId`/`tax` relation field names on
+`Product`/`Category`, so no downstream field renames were needed, only the referenced
+model)**:
+- `TaxComponent` (code, name, rate, active) — an atomic tax rate, e.g. "CGST 9%".
+  Never applied to a Product/Category directly.
+- `TaxClassification` (name, slug, description, sortOrder, active) — the filing/
+  reporting category a Tax group is tagged with (Taxable, Nil Rated, Zero Rated,
+  Exempt, Composition, Reverse Charge — seeded to match the reference exactly).
+- `TaxGroup` (code, name, classificationId → TaxClassification, `rate` — a cached sum
+  of its components' rates so Quotation/POS math keeps reading one plain number
+  exactly as before, pricesIncludeTax, isDefault, active) — the actual thing applied
+  to a Product/Category. Built from one or more `TaxComponent`s via the
+  `TaxGroupComponent` join table; `rate` is recomputed server-side on every group
+  save and also whenever a component's own rate changes (every group using that
+  component gets its cached `rate` refreshed in the same request).
+- `DrugSchedule` (shortCode, country — ISO-2, displayName, description, active,
+  unique on `[shortCode, country]`) — replaces the old hardcoded
+  `DRUG_SCHEDULE_VALUES` string enum on `Product` with a real, country-scoped,
+  manageable table. `Product.drugSchedule` changed from a plain string to a relation
+  (`drugScheduleId` + `drugSchedule`); null means "not a scheduled drug" (no row
+  needed, unlike the old `"NOT_SCHEDULED"` sentinel string).
+
+**Migration — additive → backfill → drop, same proven pattern as §22, applied to a
+table (`Tax`) that Quotation/POS pricing actively reads from, so the backfill step is
+not optional on any database with existing data**:
+1. Stage 1 (`20260914070000_add_tax_management_stage1`, purely additive): create
+   `TaxClassification`/`TaxComponent`/`TaxGroup`/`TaxGroupComponent`/`DrugSchedule`;
+   add a nullable `Product.drugScheduleId` and temporary nullable
+   `Product.newTaxId`/`Category.newTaxId` landing columns, while the old `Tax` table
+   and `Product.taxId`(→`Tax`)/`Product.drugSchedule` string column stay untouched.
+2. `prisma/backfill-tax-management.ts` (`npx tsx prisma/backfill-tax-management.ts`,
+   required before stage 2 on any database with existing `Tax`/`Product` rows — unlike
+   §22's `unitId`, `taxId` stays nullable in the final schema, so skipping this step
+   would not fail stage 2 outright, it would just silently null out every product's
+   and category's tax on promotion, which is worse): reads the old `Tax` table and
+   `Product.drugSchedule` string column via raw SQL (same reason as §22 — the
+   committed `schema.prisma` has no typed field for either anymore), converts every
+   legacy `Tax` row into one `TaxGroup` + one `TaxComponent` (classified as "Taxable"),
+   seeds the five India drug schedules from the reference (OTC, H, H1, X, G) and maps
+   each product's old `drugSchedule` string onto the matching row, then sets every
+   `Product.newTaxId`/`Category.newTaxId`/`Product.drugScheduleId`. Idempotent; exits
+   non-zero if any product with a legacy `taxId` failed to map to a new `TaxGroup`.
+3. Stage 2 (`20260914070100_add_tax_management_stage2`, hand-written and idempotent
+   the same way as §22's stage 2 — `DROP CONSTRAINT IF EXISTS`, a `DO $$...duplicate_
+   object` guard around re-adding FKs, and an `information_schema` existence check
+   guarding the `newTaxId → taxId` rename so a retry after a partial failure is safe):
+   drops the old `Product_taxId_fkey`/`Category_taxId_fkey` (→ `Tax`), promotes
+   `newTaxId` into `taxId` on both tables, drops the old `Product.drugSchedule` string
+   column, drops the now-unused `Tax` table, and re-adds `taxId` FKs pointing at
+   `TaxGroup`.
+
+**New CRUD API routes**: `/api/tax-classifications`, `/api/tax-components`,
+`/api/tax-groups`, `/api/drug-schedules` (each `GET`/`POST` + `/[id]` `PATCH`/
+`DELETE`), validated via `src/lib/validations/tax-management.ts`. `/api/tax-groups`
+recomputes `rate` server-side from the selected `componentIds` (never trusts a
+client-sent rate) and, inside a transaction, clears `isDefault` on every other group
+first whenever a group is saved with `isDefault: true` (mirroring the reference's "one
+default at a time" rule). `/api/tax-components/[id]` `PATCH` also refreshes the cached
+`rate` on every `TaxGroup` containing that component when its own rate changes.
+
+**New pages**, each its own sidebar route (not tabs, per the user's explicit
+direction) — `/admin/tax-management/classifications`, `/admin/tax-management/
+components`, `/admin/tax-management/groups`, `/admin/drug-schedules` (kept at this
+top-level URL, matching the reference exactly, even though it's grouped under Tax
+Management in the sidebar) — all built on the same list-on-the-left +
+detail-panel-on-the-right layout as Product Setup's panels. The Tax groups panel is
+the one meaningfully different one: component selection is a checkbox list with a
+live-computed "Combined rate" total (client-side, from the same component rates the
+server will use to compute the authoritative `rate` on save), plus a link to the
+Classifications page matching the reference's own cross-link.
+
+**Every call site updated**: `prisma/seed.ts` (seeds the six classifications, one
+`TaxComponent`+`TaxGroup` pair each for the two demo taxes, and the five IN drug
+schedules — no product in the seed data sets a drug schedule, matching "this business
+doesn't sell scheduled drugs" from §21); `src/app/admin/product-setup/page.tsx`,
+`src/app/admin/products/new/page.tsx`, `src/app/api/products/route.ts`,
+`src/app/api/categories/route.ts` (all `prisma.tax.*` → `prisma.taxGroup.*`, since the
+relation field name didn't change, `include: { tax: true }` call sites needed no
+edits at all); `product-form.tsx` (the static `DRUG_SCHEDULE_VALUES` enum select
+replaced with a real `<Select>` over the `drugSchedules` prop, `drugScheduleId` sent
+instead of a string).
+
+**Not yet applied to this session's own sandbox database**: this container's
+environment denies Prisma/database-mutating shell commands (`migrate deploy`,
+`migrate reset`) under its own auto-mode policy, so the migration could not be applied
+or live-browser-tested end to end here the way §22's was. Verified instead via: a
+clean `npx tsc --noEmit` and `npm run lint` pass across every new/changed file, a
+full `npm run build` (production build compiles and statically registers every new
+route with no errors), and hitting `/admin/product-setup` against the *unmigrated*
+sandbox database — which correctly reached the database and failed with Prisma's own
+`P2021 TableDoesNotExist` on `TaxGroup` (proving the regenerated Prisma Client and all
+call sites are wired correctly; the only missing step is applying the migration
+itself). The exact commands to run against a real database are identical in shape to
+§22's recovery steps: `npx prisma migrate deploy --config prisma7.config.ts` (stage 1
+succeeds, stage 2 is expected to fail here since backfill hasn't run yet) → `npx tsx
+prisma/backfill-tax-management.ts` → `npx prisma migrate deploy --config
+prisma7.config.ts` again (stage 2 now succeeds) → regenerate the Prisma Client if
+stale (§22's Windows staleness fix applies identically) → restart `npm run dev`.

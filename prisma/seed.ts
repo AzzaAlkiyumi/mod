@@ -15,7 +15,11 @@ async function main() {
   await prisma.brand.deleteMany();
   await prisma.unit.deleteMany();
   await prisma.unitCategory.deleteMany();
-  await prisma.tax.deleteMany();
+  await prisma.taxGroupComponent.deleteMany();
+  await prisma.taxGroup.deleteMany();
+  await prisma.taxComponent.deleteMany();
+  await prisma.taxClassification.deleteMany();
+  await prisma.drugSchedule.deleteMany();
   await prisma.customer.deleteMany();
   await prisma.user.deleteMany();
   await prisma.store.deleteMany();
@@ -61,12 +65,59 @@ async function main() {
     },
   });
 
-  // Oman's actual VAT rate is 5% (matches the reference invoice's "VAT 5%").
-  const standardTax = await prisma.tax.create({
-    data: { name: "Standard VAT", rate: 5, isDefault: true },
+  // Tax Management — classifications drive filing/reporting, tax groups are
+  // the thing actually applied to products/categories (built from one or
+  // more tax components). Mirrors the reference site's Tax Management pages.
+  const [taxableClassification, zeroRatedClassification] = await Promise.all([
+    prisma.taxClassification.create({ data: { name: "Taxable", slug: "taxable", sortOrder: 0 } }),
+    prisma.taxClassification.create({
+      data: { name: "Zero Rated", slug: "zero_rated", sortOrder: 2 },
+    }),
+  ]);
+  await prisma.taxClassification.createMany({
+    data: [
+      { name: "Nil Rated", slug: "nil_rated", sortOrder: 1 },
+      { name: "Exempt", slug: "exempt", sortOrder: 3 },
+      { name: "Composition", slug: "composition", sortOrder: 4 },
+      { name: "Reverse Charge", slug: "reverse_charge", sortOrder: 5 },
+    ],
   });
-  const zeroTax = await prisma.tax.create({
-    data: { name: "Zero Rated", rate: 0 },
+
+  // Oman's actual VAT rate is 5% (matches the reference invoice's "VAT 5%").
+  const standardVatComponent = await prisma.taxComponent.create({
+    data: { code: "VAT_5", name: "VAT 5%", rate: 5 },
+  });
+  const standardTax = await prisma.taxGroup.create({
+    data: {
+      code: "STANDARD_VAT",
+      name: "Standard VAT",
+      classificationId: taxableClassification.id,
+      rate: 5,
+      isDefault: true,
+      components: { create: [{ taxComponentId: standardVatComponent.id }] },
+    },
+  });
+  const zeroRatedComponent = await prisma.taxComponent.create({
+    data: { code: "ZERO", name: "Zero Rated", rate: 0 },
+  });
+  const zeroTax = await prisma.taxGroup.create({
+    data: {
+      code: "ZERO_RATED",
+      name: "Zero Rated",
+      classificationId: zeroRatedClassification.id,
+      rate: 0,
+      components: { create: [{ taxComponentId: zeroRatedComponent.id }] },
+    },
+  });
+
+  await prisma.drugSchedule.createMany({
+    data: [
+      { shortCode: "OTC", country: "IN", displayName: "Over-the-Counter" },
+      { shortCode: "H", country: "IN", displayName: "Schedule H" },
+      { shortCode: "H1", country: "IN", displayName: "Schedule H1" },
+      { shortCode: "X", country: "IN", displayName: "Schedule X" },
+      { shortCode: "G", country: "IN", displayName: "Schedule G" },
+    ],
   });
 
   const customers = await Promise.all(

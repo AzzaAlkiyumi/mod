@@ -21,7 +21,6 @@ import {
 } from "@/components/ui/select";
 import { formatCurrency } from "@/lib/utils";
 import { useDictionary } from "@/i18n/dictionary-context";
-import { DRUG_SCHEDULE_VALUES } from "@/lib/validations/product";
 
 const TABS = ["general", "inventory", "pricing", "compliance"] as const;
 type Tab = (typeof TABS)[number];
@@ -64,7 +63,7 @@ const emptyForm = {
   mrp: "",
   priceIncludesTax: false,
   hsnCode: "",
-  drugSchedule: "NOT_SCHEDULED" as (typeof DRUG_SCHEDULE_VALUES)[number],
+  drugScheduleId: "",
   genericName: "",
   manufacturer: "",
 };
@@ -74,11 +73,13 @@ export function ProductForm({
   units,
   brands,
   taxes,
+  drugSchedules,
 }: {
   categories: NamedOption[];
   units: NamedOption[];
   brands: NamedOption[];
   taxes: TaxOption[];
+  drugSchedules: NamedOption[];
 }) {
   const router = useRouter();
   const { t, locale } = useDictionary();
@@ -151,7 +152,7 @@ export function ProductForm({
           mrp: form.mrp || undefined,
           priceIncludesTax: form.priceIncludesTax,
           hsnCode: form.hsnCode.trim() || undefined,
-          drugSchedule: form.drugSchedule,
+          drugScheduleId: form.drugScheduleId || undefined,
           genericName: form.genericName.trim() || undefined,
           manufacturer: form.manufacturer.trim() || undefined,
         }),
@@ -751,16 +752,17 @@ export function ProductForm({
             <div className="flex flex-col gap-1.5">
               <Label htmlFor="pf-drug-schedule">{s.drugSchedule}</Label>
               <Select
-                value={form.drugSchedule}
-                onValueChange={(v) => set("drugSchedule", v as (typeof DRUG_SCHEDULE_VALUES)[number])}
+                value={form.drugScheduleId}
+                onValueChange={(v) => set("drugScheduleId", v)}
               >
                 <SelectTrigger id="pf-drug-schedule">
-                  <SelectValue />
+                  <SelectValue placeholder={s.drugScheduleNone} />
                 </SelectTrigger>
                 <SelectContent>
-                  {DRUG_SCHEDULE_VALUES.map((value) => (
-                    <SelectItem key={value} value={value}>
-                      {s.drugScheduleOptions[value]}
+                  <SelectItem value="">{s.drugScheduleNone}</SelectItem>
+                  {drugSchedules.map((ds) => (
+                    <SelectItem key={ds.id} value={ds.id}>
+                      {ds.name}
                     </SelectItem>
                   ))}
                 </SelectContent>

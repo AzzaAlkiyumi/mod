@@ -106,13 +106,76 @@ model Customer {
   @@index([phone])
 }
 
-model Tax {
-  id        String   @id @default(cuid())
-  name      String
-  rate      Decimal  @db.Decimal(6, 3) // percentage, e.g. 15.000 = 15%
-  isDefault Boolean  @default(false)
-  products  Product[]
-  categories Category[]
+/// Atomic tax rate — the smallest building block (e.g. "CGST 9%"). Combined
+/// into TaxGroups below; never applied to a Product/Category directly.
+model TaxComponent {
+  id     String              @id @default(cuid())
+  code   String              @unique
+  name   String
+  rate   Decimal             @db.Decimal(6, 3) // percentage, e.g. 9.000 = 9%
+  active Boolean             @default(true)
+  groups TaxGroupComponent[]
+}
+
+/// Classification value used to tag a TaxGroup for filing/reporting purposes
+/// (Taxable, Exempt, Zero Rated...). Real, managed data instead of a
+/// hardcoded enum — see Tax Management > Tax classifications.
+model TaxClassification {
+  id          String     @id @default(cuid())
+  name        String
+  slug        String     @unique
+  description String?
+  sortOrder   Int        @default(0)
+  active      Boolean    @default(true)
+  taxGroups   TaxGroup[]
+}
+
+/// The actual thing a Product/Category is taxed with — replaces the old
+/// flat `Tax` model (see prisma/backfill-tax-management.ts for the
+/// migration: every old Tax row became one TaxGroup with one TaxComponent).
+/// Bundles one or more TaxComponents into a single applied rate; `rate` is
+/// the cached sum of its components' rates, so Quotation/POS calculations
+/// keep reading one plain number exactly as before.
+model TaxGroup {
+  id               String              @id @default(cuid())
+  code             String              @unique
+  name             String
+  classificationId String
+  classification   TaxClassification   @relation(fields: [classificationId], references: [id])
+  components       TaxGroupComponent[]
+  rate             Decimal             @db.Decimal(6, 3) // cached sum of component rates, e.g. 15.000 = 15%
+  pricesIncludeTax Boolean             @default(false)
+  isDefault        Boolean             @default(false)
+  active           Boolean             @default(true)
+  products         Product[]
+  categories       Category[]
+
+  @@index([classificationId])
+}
+
+/// Join table: which TaxComponents make up a TaxGroup.
+model TaxGroupComponent {
+  id             String       @id @default(cuid())
+  taxGroupId     String
+  taxGroup       TaxGroup     @relation(fields: [taxGroupId], references: [id], onDelete: Cascade)
+  taxComponentId String
+  taxComponent   TaxComponent @relation(fields: [taxComponentId], references: [id])
+
+  @@unique([taxGroupId, taxComponentId])
+}
+
+/// Country-scoped regulatory drug schedule (OTC, Schedule H, H1, X...) —
+/// replaces the old hardcoded DRUG_SCHEDULE_VALUES string enum on Product.
+model DrugSchedule {
+  id          String    @id @default(cuid())
+  shortCode   String
+  country     String // ISO-2, e.g. "IN", "US"
+  displayName String
+  description String?
+  active      Boolean   @default(true)
+  products    Product[]
+
+  @@unique([shortCode, country])
 }
 
 /// Groups of measurement units (Count, Weight, Volume...) — mirrors the
@@ -154,7 +217,7 @@ model Category {
   name      String
   iconColor String     @default("orange")
   taxId     String?
-  tax       Tax?       @relation(fields: [taxId], references: [id])
+  tax       TaxGroup?  @relation(fields: [taxId], references: [id])
   parentId  String?
   parent    Category?  @relation("CategoryHierarchy", fields: [parentId], references: [id])
   children  Category[] @relation("CategoryHierarchy")
@@ -199,7 +262,7 @@ model Product {
   /// from within a quotation. Null when the product has no photo yet.
   imageUrl      String?
   taxId         String?
-  tax           Tax?            @relation(fields: [taxId], references: [id])
+  tax           TaxGroup?       @relation(fields: [taxId], references: [id])
   /// Real, managed unit (replaces the old free-text string) — see the
   /// Product Setup > Units admin page.
   unitId        String
@@ -236,7 +299,10 @@ model Product {
   /// generic (not wired into any tax calculation) since this business
   /// doesn't sell scheduled drugs.
   hsnCode          String?
-  drugSchedule     String        @default("NOT_SCHEDULED")
+  /// Real, managed drug schedule (replaces the old free-text/enum string) —
+  /// see Tax Management > Drug schedules. Null = not a scheduled drug.
+  drugScheduleId   String?
+  drugSchedule     DrugSchedule? @relation(fields: [drugScheduleId], references: [id])
   genericName      String?
   manufacturer     String?
   createdAt     DateTime        @default(now())
@@ -247,6 +313,8 @@ model Product {
   @@index([name])
   @@index([categoryId])
   @@index([unitId])
+  @@index([taxId])
+  @@index([drugScheduleId])
 }
 
 model Quotation {

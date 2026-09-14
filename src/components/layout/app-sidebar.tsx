@@ -3,25 +3,51 @@
 import { useMemo, useState } from "react";
 import Link from "next/link";
 import { usePathname } from "next/navigation";
-import { ReceiptText, Search, X } from "lucide-react";
+import { ChevronDown, ReceiptText, Search, X } from "lucide-react";
 
 import { cn } from "@/lib/utils";
-import { NAV_GROUPS } from "@/components/layout/nav-config";
+import { NAV_GROUPS, type NavItem } from "@/components/layout/nav-config";
 import { useDictionary } from "@/i18n/dictionary-context";
+
+function itemMatchesChild(item: NavItem, pathname: string | null) {
+  return item.children?.some(
+    (c) => pathname === c.href || pathname?.startsWith(`${c.href}/`),
+  );
+}
 
 export function AppSidebar() {
   const pathname = usePathname();
   const { t } = useDictionary();
   const [query, setQuery] = useState("");
+  const [expanded, setExpanded] = useState<Set<string>>(new Set());
 
   const filteredGroups = useMemo(() => {
     const q = query.trim().toLowerCase();
     if (!q) return NAV_GROUPS;
     return NAV_GROUPS.map((group) => ({
       ...group,
-      items: group.items.filter((item) => t.nav.items[item.key].toLowerCase().includes(q)),
+      items: group.items
+        .map((item) => {
+          const parentMatches = t.nav.items[item.key].toLowerCase().includes(q);
+          if (!item.children) return parentMatches ? item : null;
+          const matchingChildren = parentMatches
+            ? item.children
+            : item.children.filter((c) => t.nav.items[c.key].toLowerCase().includes(q));
+          if (matchingChildren.length === 0) return null;
+          return { ...item, children: matchingChildren };
+        })
+        .filter((item): item is NavItem => item !== null),
     })).filter((group) => group.items.length > 0);
   }, [query, t]);
+
+  function toggle(key: string) {
+    setExpanded((prev) => {
+      const next = new Set(prev);
+      if (next.has(key)) next.delete(key);
+      else next.add(key);
+      return next;
+    });
+  }
 
   return (
     <aside className="no-print hidden w-64 shrink-0 flex-col border-e border-sidebar-border bg-sidebar md:flex">
@@ -68,12 +94,65 @@ export function AppSidebar() {
             </p>
             <ul className="flex flex-col gap-0.5">
               {group.items.map((item) => {
-                const active = pathname === item.href || pathname?.startsWith(`${item.href}/`);
                 const Icon = item.icon;
+
+                if (item.children) {
+                  const childActive = itemMatchesChild(item, pathname);
+                  const isOpen = expanded.has(item.key) || Boolean(query.trim()) || childActive;
+                  return (
+                    <li key={item.key}>
+                      <button
+                        type="button"
+                        onClick={() => toggle(item.key)}
+                        aria-expanded={isOpen}
+                        className={cn(
+                          "flex w-full items-center gap-2.5 rounded-md px-2.5 py-2 text-sm transition-colors",
+                          childActive
+                            ? "font-medium text-sidebar-accent-foreground"
+                            : "text-sidebar-foreground hover:bg-sidebar-accent/60",
+                        )}
+                      >
+                        <Icon className="size-4 shrink-0" />
+                        <span className="flex-1 truncate text-start">{t.nav.items[item.key]}</span>
+                        <ChevronDown
+                          className={cn(
+                            "size-3.5 shrink-0 transition-transform",
+                            isOpen && "rotate-180",
+                          )}
+                        />
+                      </button>
+                      {isOpen && (
+                        <ul className="mt-0.5 flex flex-col gap-0.5 border-s border-sidebar-border ps-3.5">
+                          {item.children.map((child) => {
+                            const active =
+                              pathname === child.href || pathname?.startsWith(`${child.href}/`);
+                            return (
+                              <li key={child.href}>
+                                <Link
+                                  href={child.href}
+                                  className={cn(
+                                    "flex items-center rounded-md px-2.5 py-1.5 text-sm transition-colors",
+                                    active
+                                      ? "bg-sidebar-accent font-medium text-sidebar-accent-foreground"
+                                      : "text-sidebar-foreground hover:bg-sidebar-accent/60",
+                                  )}
+                                >
+                                  <span className="truncate">{t.nav.items[child.key]}</span>
+                                </Link>
+                              </li>
+                            );
+                          })}
+                        </ul>
+                      )}
+                    </li>
+                  );
+                }
+
+                const active = pathname === item.href || pathname?.startsWith(`${item.href}/`);
                 return (
                   <li key={item.href}>
                     <Link
-                      href={item.href}
+                      href={item.href!}
                       className={cn(
                         "flex items-center gap-2.5 rounded-md px-2.5 py-2 text-sm transition-colors",
                         active

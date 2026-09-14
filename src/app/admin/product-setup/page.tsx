@@ -16,7 +16,7 @@ export default async function ProductSetupPage() {
       orderBy: { displayName: "asc" },
     }),
     prisma.unitCategory.findMany({ orderBy: [{ sortOrder: "asc" }, { name: "asc" }] }),
-    prisma.tax.findMany({ orderBy: [{ isDefault: "desc" }, { name: "asc" }] }),
+    prisma.taxGroup.findMany({ orderBy: [{ isDefault: "desc" }, { name: "asc" }] }),
   ]);
 
   return (

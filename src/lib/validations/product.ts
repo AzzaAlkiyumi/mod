@@ -1,7 +1,5 @@
 import { z } from "zod";
 
-export const DRUG_SCHEDULE_VALUES = ["NOT_SCHEDULED", "OTC", "H", "H1", "X", "G"] as const;
-
 export const productCreateSchema = z.object({
   name: z.string().trim().min(1, "English product name is required"),
   nameAr: z.string().trim().optional(),
@@ -37,7 +35,7 @@ export const productCreateSchema = z.object({
 
   // Compliance
   hsnCode: z.string().trim().optional(),
-  drugSchedule: z.enum(DRUG_SCHEDULE_VALUES).default("NOT_SCHEDULED"),
+  drugScheduleId: z.string().trim().optional(),
   genericName: z.string().trim().optional(),
   manufacturer: z.string().trim().optional(),
 });

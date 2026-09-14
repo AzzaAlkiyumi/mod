@@ -46,10 +46,21 @@ export async function POST(request: Request) {
   const input = parsed.data;
 
   if (input.taxId) {
-    const tax = await prisma.tax.findUnique({ where: { id: input.taxId } });
+    const tax = await prisma.taxGroup.findUnique({ where: { id: input.taxId } });
     if (!tax) {
       return NextResponse.json(
         { error: { formErrors: ["Selected tax no longer exists"] } },
+        { status: 400 },
+      );
+    }
+  }
+  if (input.drugScheduleId) {
+    const drugSchedule = await prisma.drugSchedule.findUnique({
+      where: { id: input.drugScheduleId },
+    });
+    if (!drugSchedule) {
+      return NextResponse.json(
+        { error: { formErrors: ["Selected drug schedule no longer exists"] } },
         { status: 400 },
       );
     }
@@ -112,7 +123,7 @@ export async function POST(request: Request) {
         mrp: input.mrp ?? null,
         priceIncludesTax: input.priceIncludesTax,
         hsnCode: input.hsnCode || null,
-        drugSchedule: input.drugSchedule,
+        drugScheduleId: input.drugScheduleId || null,
         genericName: input.genericName || null,
         manufacturer: input.manufacturer || null,
       },

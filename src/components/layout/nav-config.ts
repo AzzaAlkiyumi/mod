@@ -18,14 +18,25 @@ import {
   Settings,
   BarChart3,
   Truck,
+  Percent,
 } from "lucide-react";
 
 import type { Dictionary } from "@/i18n/dictionaries/en";
 
-export interface NavItem {
+export interface NavChild {
   key: keyof Dictionary["nav"]["items"];
   href: string;
+}
+
+/** A plain link has `href`; a group with `children` instead expands/collapses
+ * in place (no href of its own) — used for Tax Management, matching the
+ * reference site's real dropdown, unlike Product Setup which we deliberately
+ * built as single-page tabs instead. */
+export interface NavItem {
+  key: keyof Dictionary["nav"]["items"];
+  href?: string;
   icon: LucideIcon;
+  children?: NavChild[];
 }
 
 export interface NavGroup {
@@ -71,6 +82,16 @@ export const NAV_GROUPS: NavGroup[] = [
       { key: "products", href: "/admin/products", icon: Package },
       { key: "printLabels", href: "/admin/print-labels", icon: Tags },
       { key: "productSetup", href: "/admin/product-setup", icon: Settings },
+      {
+        key: "taxManagement",
+        icon: Percent,
+        children: [
+          { key: "taxComponents", href: "/admin/tax-management/components" },
+          { key: "taxGroups", href: "/admin/tax-management/groups" },
+          { key: "taxClassifications", href: "/admin/tax-management/classifications" },
+          { key: "drugSchedules", href: "/admin/drug-schedules" },
+        ],
+      },
     ],
   },
   {
