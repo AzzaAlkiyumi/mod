@@ -83,7 +83,7 @@ export function AppSidebar() {
                   type="button"
                   onClick={() => toggle(group.key)}
                   aria-expanded={isOpen}
-                  className="flex w-full items-center gap-1 px-2 pb-1 text-[11px] font-semibold uppercase tracking-wider text-muted-foreground hover:text-foreground"
+                  className="flex w-full items-center gap-1 rounded px-2 pb-1 text-[11px] font-semibold uppercase tracking-wider text-muted-foreground outline-none hover:text-foreground focus-visible:ring-2 focus-visible:ring-ring/50"
                 >
                   <span className="flex-1 text-start">{t.nav.groups[group.key]}</span>
                   <ChevronDown
