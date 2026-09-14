@@ -61,7 +61,11 @@ export async function POST(request: Request) {
           active: input.active,
           components: { create: input.componentIds.map((taxComponentId) => ({ taxComponentId })) },
         },
-        include: { classification: true, components: { include: { taxComponent: true } } },
+        include: {
+          classification: true,
+          components: { include: { taxComponent: true } },
+          _count: { select: { products: true, categories: true } },
+        },
       });
     });
     return NextResponse.json({ data: group }, { status: 201 });

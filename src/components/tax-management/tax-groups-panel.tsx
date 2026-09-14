@@ -228,7 +228,7 @@ export function TaxGroupsPanel({
                 </div>
               </div>
               <span className="text-xs text-muted-foreground">
-                {s.groups.inUse(row._count.products + row._count.categories)}
+                {s.groups.inUse((row._count?.products ?? 0) + (row._count?.categories ?? 0))}
               </span>
               {!row.active && (
                 <span className="text-xs text-muted-foreground">{s.common.inactive}</span>
