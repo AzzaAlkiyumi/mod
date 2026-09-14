@@ -13,8 +13,12 @@ export type QuotationDetail = Prisma.QuotationGetPayload<{
     store: true;
     customer: true;
     createdBy: true;
-    items: { include: { product: { include: { tax: true } } } };
+    items: {
+      include: { product: { include: { tax: true; unit: true } } };
+    };
   };
 }>;
 
-export type ProductWithTax = Prisma.ProductGetPayload<{ include: { tax: true } }>;
+export type ProductWithTax = Prisma.ProductGetPayload<{
+  include: { tax: true; category: true; unit: true; brand: true };
+}>;

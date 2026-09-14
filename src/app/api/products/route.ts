@@ -8,7 +8,7 @@ import { generateProductSku } from "@/lib/product-sku";
 export async function GET(request: Request) {
   const { searchParams } = new URL(request.url);
   const q = searchParams.get("q")?.trim();
-  const category = searchParams.get("category")?.trim();
+  const categoryId = searchParams.get("categoryId")?.trim();
   // The quotation item search wants a short, fast dropdown (default 20); the
   // POS product grid wants the whole catalog at once — pass take=all for that.
   const takeParam = searchParams.get("take");
@@ -26,10 +26,10 @@ export async function GET(request: Request) {
               ],
             }
           : {},
-        category ? { category } : {},
+        categoryId ? { categoryId } : {},
       ],
     },
-    include: { tax: true },
+    include: { tax: true, category: true, unit: true, brand: true },
     orderBy: { name: "asc" },
     take,
   });
@@ -55,6 +55,32 @@ export async function POST(request: Request) {
     }
   }
 
+  const unit = await prisma.unit.findUnique({ where: { id: input.unitId } });
+  if (!unit) {
+    return NextResponse.json(
+      { error: { formErrors: ["Selected unit no longer exists"] } },
+      { status: 400 },
+    );
+  }
+  if (input.categoryId) {
+    const category = await prisma.category.findUnique({ where: { id: input.categoryId } });
+    if (!category) {
+      return NextResponse.json(
+        { error: { formErrors: ["Selected category no longer exists"] } },
+        { status: 400 },
+      );
+    }
+  }
+  if (input.brandId) {
+    const brand = await prisma.brand.findUnique({ where: { id: input.brandId } });
+    if (!brand) {
+      return NextResponse.json(
+        { error: { formErrors: ["Selected brand no longer exists"] } },
+        { status: 400 },
+      );
+    }
+  }
+
   const sku = input.sku || (await generateProductSku());
 
   try {
@@ -64,10 +90,11 @@ export async function POST(request: Request) {
         barcode: input.barcode || null,
         name: input.name,
         nameAr: input.nameAr || null,
-        unit: input.unit,
+        unitId: input.unitId,
         price: input.price,
         taxId: input.taxId || null,
-        category: input.category,
+        categoryId: input.categoryId || null,
+        brandId: input.brandId || null,
         imageUrl: input.imageUrl || null,
         descriptionEn: input.descriptionEn || null,
         descriptionAr: input.descriptionAr || null,
@@ -89,7 +116,7 @@ export async function POST(request: Request) {
         genericName: input.genericName || null,
         manufacturer: input.manufacturer || null,
       },
-      include: { tax: true },
+      include: { tax: true, category: true, unit: true, brand: true },
     });
     return NextResponse.json({ data: product }, { status: 201 });
   } catch (err) {

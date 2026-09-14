@@ -47,7 +47,7 @@ function toFormInitialData(quotation: QuotationDetail): QuotationFormInitialData
       productId: item.productId,
       name: item.product.name,
       sku: item.product.sku,
-      unit: item.product.unit,
+      unit: item.product.unit.displayName,
       imageUrl: item.product.imageUrl,
       unitPrice: Number(item.unitPrice),
       taxRate: Number(item.taxRate),
@@ -70,7 +70,10 @@ export default async function QuotationDetailPage({ params, searchParams }: Page
       store: true,
       customer: true,
       createdBy: true,
-      items: { include: { product: { include: { tax: true } } }, orderBy: { sortOrder: "asc" } },
+      items: {
+        include: { product: { include: { tax: true, unit: true } } },
+        orderBy: { sortOrder: "asc" },
+      },
     },
   });
 

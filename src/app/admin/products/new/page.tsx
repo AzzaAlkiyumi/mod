@@ -4,20 +4,18 @@ import { ProductForm } from "@/components/products/product-form";
 export const dynamic = "force-dynamic";
 
 export default async function NewProductPage() {
-  const [products, taxes] = await Promise.all([
-    prisma.product.findMany({ select: { category: true, unit: true } }),
+  const [categories, units, brands, taxes] = await Promise.all([
+    prisma.category.findMany({ where: { active: true }, orderBy: { name: "asc" } }),
+    prisma.unit.findMany({ where: { active: true }, orderBy: { displayName: "asc" } }),
+    prisma.brand.findMany({ where: { active: true }, orderBy: { name: "asc" } }),
     prisma.tax.findMany({ orderBy: [{ isDefault: "desc" }, { name: "asc" }] }),
   ]);
 
-  const categories = Array.from(
-    new Set(products.map((p) => p.category).filter((c): c is string => Boolean(c))),
-  ).sort();
-  const units = Array.from(new Set(products.map((p) => p.unit))).sort();
-
   return (
     <ProductForm
-      categories={categories}
-      units={units}
+      categories={categories.map((c) => ({ id: c.id, name: c.name }))}
+      units={units.map((u) => ({ id: u.id, name: u.displayName }))}
+      brands={brands.map((b) => ({ id: b.id, name: b.name }))}
       taxes={taxes.map((t) => ({ id: t.id, name: t.name, rate: Number(t.rate) }))}
     />
   );

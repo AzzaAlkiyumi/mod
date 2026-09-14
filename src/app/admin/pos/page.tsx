@@ -6,7 +6,7 @@ export const dynamic = "force-dynamic";
 export default async function POSPage() {
   const [products, stores] = await Promise.all([
     prisma.product.findMany({
-      include: { tax: true },
+      include: { tax: true, category: true, unit: true },
       orderBy: { name: "asc" },
     }),
     prisma.store.findMany({ orderBy: [{ isDefault: "desc" }, { name: "asc" }] }),
@@ -17,10 +17,10 @@ export default async function POSPage() {
     sku: p.sku,
     barcode: p.barcode,
     name: p.name,
-    unit: p.unit,
+    unit: p.unit.displayName,
     price: Number(p.price),
     imageUrl: p.imageUrl,
-    category: p.category,
+    category: p.category?.name ?? null,
     taxRate: p.tax ? Number(p.tax.rate) : 0,
   }));
 

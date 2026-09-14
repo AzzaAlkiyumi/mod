@@ -27,7 +27,10 @@ export default async function QuotationPreviewPage({
       store: true,
       customer: true,
       createdBy: true,
-      items: { include: { product: { include: { tax: true } } }, orderBy: { sortOrder: "asc" } },
+      items: {
+        include: { product: { include: { tax: true, unit: true } } },
+        orderBy: { sortOrder: "asc" },
+      },
     },
   });
 

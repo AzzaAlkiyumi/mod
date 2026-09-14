@@ -112,6 +112,71 @@ model Tax {
   rate      Decimal  @db.Decimal(6, 3) // percentage, e.g. 15.000 = 15%
   isDefault Boolean  @default(false)
   products  Product[]
+  categories Category[]
+}
+
+/// Groups of measurement units (Count, Weight, Volume...) — mirrors the
+/// reference site's "Unit Categories" page under Product Setup.
+model UnitCategory {
+  id        String   @id @default(cuid())
+  name      String
+  slug      String   @unique
+  sortOrder Int      @default(0)
+  active    Boolean  @default(true)
+  units     Unit[]
+}
+
+/// A unit products are sold/measured by (pcs, kg, L...). Real, managed
+/// table — replaces the old free-text Product.unit string. Conversion
+/// fields mirror the reference site's data but aren't used in any
+/// calculation yet (nothing in this app converts between units).
+model Unit {
+  id                    String        @id @default(cuid())
+  shortCode             String        @unique
+  displayName           String
+  measurementCategoryId String
+  measurementCategory   UnitCategory  @relation(fields: [measurementCategoryId], references: [id])
+  baseUnitId            String?
+  baseUnit              Unit?         @relation("UnitConversion", fields: [baseUnitId], references: [id])
+  convertsFrom          Unit[]        @relation("UnitConversion")
+  conversionFactor      Decimal?      @db.Decimal(18, 6)
+  active                Boolean       @default(true)
+  products              Product[]
+
+  @@index([measurementCategoryId])
+}
+
+/// Real, managed product category table — replaces the old free-text
+/// Product.category string. Supports one level of parent/child nesting,
+/// matching the reference site (e.g. "Lemon-Lime" under "Soft Drinks").
+model Category {
+  id        String     @id @default(cuid())
+  name      String
+  iconColor String     @default("orange")
+  taxId     String?
+  tax       Tax?       @relation(fields: [taxId], references: [id])
+  parentId  String?
+  parent    Category?  @relation("CategoryHierarchy", fields: [parentId], references: [id])
+  children  Category[] @relation("CategoryHierarchy")
+  active    Boolean    @default(true)
+  createdAt DateTime   @default(now())
+  updatedAt DateTime   @updatedAt
+  products  Product[]
+
+  @@index([parentId])
+}
+
+/// Manufacturer/label a product belongs to. Optional on Product — this
+/// business doesn't require every product to have a brand.
+model Brand {
+  id          String    @id @default(cuid())
+  name        String
+  logoUrl     String?
+  description String?
+  active      Boolean   @default(true)
+  createdAt   DateTime  @default(now())
+  updatedAt   DateTime  @updatedAt
+  products    Product[]
 }
 
 model Product {
@@ -128,18 +193,23 @@ model Product {
   /// optional since no product had a description at all previously.
   descriptionEn String?
   descriptionAr String?
-  unit          String          @default("pcs")
   price         Decimal         @db.Decimal(12, 3)
   /// Product photo, same as shown in the reference site's catalog/POS grid
   /// and cart. Set on the product itself (catalog data) — never uploaded
   /// from within a quotation. Null when the product has no photo yet.
   imageUrl      String?
-  /// Plain category label for the POS grid's filter chips (e.g. "Peripherals").
-  /// The reference site's categories are richer (per-category counts, colors),
-  /// but a flat string is enough for filtering without a whole category CRUD.
-  category      String?
   taxId         String?
   tax           Tax?            @relation(fields: [taxId], references: [id])
+  /// Real, managed unit (replaces the old free-text string) — see the
+  /// Product Setup > Units admin page.
+  unitId        String
+  unit          Unit            @relation(fields: [unitId], references: [id])
+  /// Real, managed category (replaces the old free-text string) — see the
+  /// Product Setup > Categories admin page.
+  categoryId    String?
+  category      Category?       @relation(fields: [categoryId], references: [id])
+  brandId       String?
+  brand         Brand?          @relation(fields: [brandId], references: [id])
   /// One-line summary shown in product pickers — distinct from the fuller
   /// descriptionEn/Ar. Added per the reference site's General tab.
   shortDescription String?
@@ -175,7 +245,8 @@ model Product {
   saleItems     SaleItem[]
 
   @@index([name])
-  @@index([category])
+  @@index([categoryId])
+  @@index([unitId])
 }
 
 model Quotation {

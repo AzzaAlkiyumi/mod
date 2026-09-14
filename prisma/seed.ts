@@ -11,6 +11,10 @@ async function main() {
   await prisma.saleItem.deleteMany();
   await prisma.sale.deleteMany();
   await prisma.product.deleteMany();
+  await prisma.category.deleteMany();
+  await prisma.brand.deleteMany();
+  await prisma.unit.deleteMany();
+  await prisma.unitCategory.deleteMany();
   await prisma.tax.deleteMany();
   await prisma.customer.deleteMany();
   await prisma.user.deleteMany();
@@ -82,17 +86,41 @@ async function main() {
     ),
   );
 
+  // Catalog taxonomy (Product Setup) — measurement categories, units,
+  // product categories. Mirrors the reference site's Product Setup pages.
+  const countUnitCategory = await prisma.unitCategory.create({
+    data: { name: "Count", slug: "count", sortOrder: 0 },
+  });
+  await prisma.unitCategory.createMany({
+    data: [
+      { name: "Weight", slug: "weight", sortOrder: 1 },
+      { name: "Volume", slug: "volume", sortOrder: 2 },
+      { name: "Length", slug: "length", sortOrder: 3 },
+      { name: "Time", slug: "time", sortOrder: 4 },
+    ],
+  });
+  const pcsUnit = await prisma.unit.create({
+    data: { shortCode: "pcs", displayName: "pcs", measurementCategoryId: countUnitCategory.id },
+  });
+
+  const categoryNames = ["Peripherals", "Displays", "Cables", "Accessories"] as const;
+  const categories = Object.fromEntries(
+    await Promise.all(
+      categoryNames.map(async (name) => [name, await prisma.category.create({ data: { name } })]),
+    ),
+  ) as Record<(typeof categoryNames)[number], { id: string }>;
+
   const products = await Promise.all(
     [
-      { sku: "SKU-1001", barcode: "8901030875021", name: "Wireless Mouse", unit: "pcs", price: 12.99, taxId: standardTax.id, imageUrl: "/products/wireless-mouse.svg", category: "Peripherals" },
-      { sku: "SKU-1002", barcode: "8901030875038", name: "Mechanical Keyboard", unit: "pcs", price: 45.5, taxId: standardTax.id, imageUrl: "/products/mechanical-keyboard.svg", category: "Peripherals" },
+      { sku: "SKU-1001", barcode: "8901030875021", name: "Wireless Mouse", unitId: pcsUnit.id, price: 12.99, taxId: standardTax.id, imageUrl: "/products/wireless-mouse.svg", categoryId: categories.Peripherals.id },
+      { sku: "SKU-1002", barcode: "8901030875038", name: "Mechanical Keyboard", unitId: pcsUnit.id, price: 45.5, taxId: standardTax.id, imageUrl: "/products/mechanical-keyboard.svg", categoryId: categories.Peripherals.id },
       // Intentionally left without an image to exercise the "no photo yet" placeholder path.
-      { sku: "SKU-1003", barcode: "8901030875045", name: '24" LED Monitor', unit: "pcs", price: 129.0, taxId: standardTax.id, category: "Displays" },
-      { sku: "SKU-1004", barcode: "8901030875052", name: "USB-C Cable 1m", unit: "pcs", price: 4.25, taxId: zeroTax.id, imageUrl: "/products/usb-c-cable.svg", category: "Cables" },
-      { sku: "SKU-1005", barcode: "8901030875069", name: "Laptop Stand", unit: "pcs", price: 22.0, taxId: standardTax.id, imageUrl: "/products/laptop-stand.svg", category: "Accessories" },
-      { sku: "SKU-1006", barcode: "8901030875076", name: "USB-C Hub 7-in-1", unit: "pcs", price: 34.0, taxId: standardTax.id, imageUrl: "/products/usb-hub.svg", category: "Peripherals" },
-      { sku: "SKU-1007", barcode: "8901030875083", name: "HD Webcam 1080p", unit: "pcs", price: 39.99, taxId: standardTax.id, imageUrl: "/products/webcam.svg", category: "Peripherals" },
-      { sku: "SKU-1008", barcode: "8901030875090", name: "HDMI Cable 2m", unit: "pcs", price: 7.5, taxId: zeroTax.id, category: "Cables" },
+      { sku: "SKU-1003", barcode: "8901030875045", name: '24" LED Monitor', unitId: pcsUnit.id, price: 129.0, taxId: standardTax.id, categoryId: categories.Displays.id },
+      { sku: "SKU-1004", barcode: "8901030875052", name: "USB-C Cable 1m", unitId: pcsUnit.id, price: 4.25, taxId: zeroTax.id, imageUrl: "/products/usb-c-cable.svg", categoryId: categories.Cables.id },
+      { sku: "SKU-1005", barcode: "8901030875069", name: "Laptop Stand", unitId: pcsUnit.id, price: 22.0, taxId: standardTax.id, imageUrl: "/products/laptop-stand.svg", categoryId: categories.Accessories.id },
+      { sku: "SKU-1006", barcode: "8901030875076", name: "USB-C Hub 7-in-1", unitId: pcsUnit.id, price: 34.0, taxId: standardTax.id, imageUrl: "/products/usb-hub.svg", categoryId: categories.Peripherals.id },
+      { sku: "SKU-1007", barcode: "8901030875083", name: "HD Webcam 1080p", unitId: pcsUnit.id, price: 39.99, taxId: standardTax.id, imageUrl: "/products/webcam.svg", categoryId: categories.Peripherals.id },
+      { sku: "SKU-1008", barcode: "8901030875090", name: "HDMI Cable 2m", unitId: pcsUnit.id, price: 7.5, taxId: zeroTax.id, categoryId: categories.Cables.id },
     ].map((p) => prisma.product.create({ data: p })),
   );
 

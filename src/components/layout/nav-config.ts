@@ -15,6 +15,7 @@ import {
   LayoutList,
   Package,
   Tags,
+  Settings,
   BarChart3,
   Truck,
 } from "lucide-react";
@@ -69,6 +70,7 @@ export const NAV_GROUPS: NavGroup[] = [
     items: [
       { key: "products", href: "/admin/products", icon: Package },
       { key: "printLabels", href: "/admin/print-labels", icon: Tags },
+      { key: "productSetup", href: "/admin/product-setup", icon: Settings },
     ],
   },
   {

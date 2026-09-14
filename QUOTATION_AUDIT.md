@@ -940,3 +940,112 @@ confirmed `/admin/pos` and `/admin/quotations/new` still render with zero consol
 errors and the POS grid still lists every product, new fields included, without
 layout breakage. The preview route/component were removed once the real page replaced
 them. `npx tsc --noEmit` and `npm run lint` clean throughout.
+
+## 22. Real catalog taxonomy — Categories, Brands, Units, Unit Categories (Product Setup)
+
+Driven by a third reference video showing the site's **Product Setup** sidebar section
+with four full CRUD pages (Categories, Brands, Units, Unit Categories), each a
+list + right-side detail-panel layout. The user explicitly approved building all four
+for real, and — critically — **linking `Product.category`/`Product.unit` to these new
+tables** (`categoryId`/`unitId`) instead of the free-text strings used since §19. Also
+approved: a `brandId` relation on Product (a natural consequence of building a real
+Brands page — an unlinked one would be pointless), and putting "Product Setup" in the
+sidebar as one ordinary link (this app's sidebar has no expand/collapse mechanism to
+begin with, so "not a dropdown" was automatically satisfied by adding it as a normal
+`nav-config.ts` entry rather than inventing one).
+
+**Explicitly excluded**, per direction, from the reference's fuller Categories page:
+per-store tax overrides beyond the one `taxId` already modeled, and multi-level
+category trees beyond one parent/child level (the schema's self-relation supports
+deeper nesting; nothing in the UI restricts it, but it was only ever exercised one
+level deep, matching the reference).
+
+**New models** (`prisma/schema.prisma`): `UnitCategory` (name, slug, sortOrder,
+active), `Unit` (shortCode, displayName, measurementCategoryId → UnitCategory,
+optional self-referential baseUnitId/conversionFactor for future unit conversion —
+not used in any calculation), `Category` (name, iconColor, optional taxId → Tax,
+optional self-referential parentId for one level of nesting, active), `Brand` (name,
+logoUrl, description, active).
+
+**Migrating `Product.category`/`Product.unit` from strings to relations — done in two
+separate migrations, never one, to avoid any data loss**:
+1. Stage 1 (`20260913205435_add_catalog_taxonomy_stage1`, purely additive): create the
+   four new tables; add nullable `categoryId`/`unitId`/`brandId` columns to `Product`
+   alongside temporary relation fields (`categoryRef`/`unitRef`), while the old
+   `category`/`unit` string columns stayed untouched.
+2. A one-off script (`prisma/backfill-catalog.ts`, run once via `tsx` then deleted —
+   not part of the regular seed flow) read every distinct existing `Product.unit` /
+   `Product.category` string, created one real `Unit`/`Category` row per distinct
+   value (units bucketed into Count/Weight/Volume/Length/Time by a simple name
+   heuristic), and set every product's new `unitId`/`categoryId` to match. Verified
+   with a direct SQL join that every product's new relation resolved to the exact
+   same value as its old string before proceeding.
+3. Stage 2 (`20260913205634_add_catalog_taxonomy_stage2`, hand-written — Prisma's own
+   `migrate dev` refuses to even generate a migration file non-interactively once it
+   detects the destructive "dropping a column with non-null values" warning, so this
+   migration's SQL was written by hand and applied via `migrate deploy`): drop the now
+   only-used-as-source-of-truth-once old `category`/`unit` string columns, and make
+   `unitId` `NOT NULL` (every row was already backfilled, so this was safe).
+   `schema.prisma` was rewritten in the same step to its final shape (`unit`/`category`
+   as the real relation field names, replacing the temporary `unitRef`/`categoryRef`).
+
+**Every call site updated** (mapped exhaustively first via a research pass before
+touching any code, to avoid missing one): `prisma/seed.ts` (seeds UnitCategories/a
+`pcs` Unit/Categories before products, references `unitId`/`categoryId`);
+`src/lib/validations/product.ts` (`categoryId`/`unitId`/`brandId` replace the old
+`category`/`unit` string fields — `unitId` required, `categoryId` required matching
+the old field's required-in-practice UX, `brandId` optional); `src/app/api/products/
+route.ts` (`GET` now filters by `?categoryId=`, not a category name string; `POST`
+validates `unitId`/`categoryId`/`brandId` actually exist before creating, matching the
+existing `taxId` check); `src/lib/types.ts` (`ProductWithTax` and `QuotationDetail`
+now `include` the `unit`/`category`/`brand` relations they need); `product-form.tsx`
+(Category and Unit are now real `<Select>` dropdowns over the managed tables, not a
+free-text `<datalist>`/"type your own unit" escape hatch — plus a new optional Brand
+dropdown); `product-table.tsx`/`product-filters.tsx`/`admin/products/page.tsx` (list,
+filter, and the "new product" page's dropdown sources all read from the real
+`Category`/`Unit`/`Brand`/`Tax` tables now, not `distinct()` over existing product
+rows — which also fixes a latent bug where a category/unit could only ever appear in
+a dropdown if at least one product already used it); `quotation-form.tsx` and
+`admin/quotations/[id]/page.tsx` (the quotation cart's per-line "12.990 / pcs" unit
+label now reads `product.unit.displayName` instead of a plain string column);
+`admin/pos/page.tsx` (POS grid's category filter chips and cart line unit label —
+`pos-view.tsx` itself needed no changes, since its `POSProduct` shape already modeled
+`unit`/`category` as plain display strings, and the server page now resolves those
+strings from the real relations before handing them to the client component).
+
+**New CRUD API routes**: `/api/categories`, `/api/brands`, `/api/units`,
+`/api/unit-categories` (each with a `GET`/`POST` at the collection route and a
+`PATCH`/`DELETE` at `/[id]`), validated with new Zod schemas in
+`src/lib/validations/catalog.ts`. A `P2003` (foreign-key violation) on delete returns
+a friendly "still in use" error instead of a raw 500 (e.g. deleting a Category that
+products still reference). Brand logo upload reuses the same pattern as the product
+image upload from §20 (`/api/uploads/brands`, same JPG/PNG/WebP + 5MB validation,
+writes to `public/uploads/brands/`).
+
+**New `/admin/product-setup` page**: one route, one client-side tab bar (Categories /
+Brands / Units / Unit Categories — no separate sidebar links, no dropdown), each tab a
+list-on-the-left + detail-panel-on-the-right layout mirroring the reference exactly.
+Selecting a row loads it into the detail form; "New" opens a blank one; Save does a
+real `POST`/`PATCH` and refreshes; Delete goes through a confirmation dialog (reusing
+the existing `Dialog` primitive, matching the Quotation delete-confirmation pattern)
+before calling `DELETE`. Sidebar entry added as one ordinary `Products` group item
+(`nav-config.ts`), linking to `/admin/product-setup` — the sidebar already had no
+expand/collapse behavior for any group, so this reads as a normal link like every
+other item, not a dropdown.
+
+**Verified**: full CRUD round-trip on all four Product Setup tabs (create a
+UnitCategory, create a Unit under it, create a Category, create a Brand — all
+persisted and listed correctly, zero console errors); created a product through
+`/admin/products/new` picking the new Category/Unit from real dropdowns and confirmed
+it saved and displays the resolved names in the products list; confirmed the products
+list's category filter dropdown and the POS grid's category filter chips both
+correctly filter using the new relations (a product outside the selected category
+disappears from the POS grid); added a pre-existing product (`Wireless Mouse`,
+migrated from the old string-column data) to a new quotation and confirmed its unit
+still shows correctly ("OMR 12.990 / pcs") and the quotation saves successfully end to
+end with correct tax/total calculation; confirmed `/admin/product-setup` renders
+correctly under `NEXT_LOCALE=ar` (full RTL mirroring, tab bar and both panes flipped)
+and at a 390px mobile viewport (two-pane layout stacks vertically, no horizontal
+scroll). `npx tsc --noEmit` and `npm run lint` clean throughout, including immediately
+after the schema/migration changes (which surfaced the exact set of now-broken call
+sites the research pass had predicted, one-for-one).

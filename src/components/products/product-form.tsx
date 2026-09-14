@@ -23,8 +23,6 @@ import { formatCurrency } from "@/lib/utils";
 import { useDictionary } from "@/i18n/dictionary-context";
 import { DRUG_SCHEDULE_VALUES } from "@/lib/validations/product";
 
-const COMMON_UNITS = ["pcs", "kg", "g", "L", "ml", "box", "pack", "set"];
-
 const TABS = ["general", "inventory", "pricing", "compliance"] as const;
 type Tab = (typeof TABS)[number];
 
@@ -34,12 +32,17 @@ interface TaxOption {
   rate: number;
 }
 
+interface NamedOption {
+  id: string;
+  name: string;
+}
+
 const emptyForm = {
   nameEn: "",
   nameAr: "",
-  category: "",
-  unit: "",
-  customUnit: "",
+  categoryId: "",
+  unitId: "",
+  brandId: "",
   price: "",
   taxId: "",
   descriptionEn: "",
@@ -69,10 +72,12 @@ const emptyForm = {
 export function ProductForm({
   categories,
   units,
+  brands,
   taxes,
 }: {
-  categories: string[];
-  units: string[];
+  categories: NamedOption[];
+  units: NamedOption[];
+  brands: NamedOption[];
   taxes: TaxOption[];
 }) {
   const router = useRouter();
@@ -91,9 +96,6 @@ export function ProductForm({
     setForm((prev) => ({ ...prev, [key]: value }));
   }
 
-  const unitOptions = Array.from(new Set([...COMMON_UNITS, ...units])).sort();
-  const effectiveUnit = form.unit === "__other__" ? form.customUnit : form.unit;
-
   const priceNum = Number(form.price) || 0;
   const costNum = Number(form.costPrice) || 0;
   const profitPerUnit = priceNum - costNum;
@@ -103,8 +105,8 @@ export function ProductForm({
   function validate() {
     const next: Record<string, string> = {};
     if (!form.nameEn.trim()) next.nameEn = s.errors.nameEn;
-    if (!form.category.trim()) next.category = s.errors.category;
-    if (!effectiveUnit.trim()) next.unit = s.errors.unit;
+    if (!form.categoryId) next.categoryId = s.errors.category;
+    if (!form.unitId) next.unitId = s.errors.unit;
     if (!form.price || !Number.isFinite(priceNum) || priceNum < 0) next.price = s.errors.price;
     setErrors(next);
     return Object.keys(next).length === 0;
@@ -125,8 +127,9 @@ export function ProductForm({
         body: JSON.stringify({
           name: form.nameEn.trim(),
           nameAr: form.nameAr.trim() || undefined,
-          category: form.category.trim(),
-          unit: effectiveUnit.trim(),
+          categoryId: form.categoryId,
+          unitId: form.unitId,
+          brandId: form.brandId || undefined,
           price: form.price,
           taxId: form.taxId || undefined,
           sku: form.sku.trim() || undefined,
@@ -291,52 +294,61 @@ export function ProductForm({
                 <Label htmlFor="pf-category">
                   {s.category} <span className="text-destructive">*</span>
                 </Label>
-                <Input
-                  id="pf-category"
-                  list="pf-category-options"
-                  value={form.category}
-                  onChange={(e) => set("category", e.target.value)}
-                  placeholder={s.categoryPlaceholder}
-                  aria-invalid={Boolean(errors.category)}
-                />
-                <datalist id="pf-category-options">
-                  {categories.map((c) => (
-                    <option key={c} value={c} />
-                  ))}
-                </datalist>
-                {errors.category && <p className="text-xs text-destructive">{errors.category}</p>}
+                <Select value={form.categoryId} onValueChange={(v) => set("categoryId", v)}>
+                  <SelectTrigger id="pf-category" aria-invalid={Boolean(errors.categoryId)}>
+                    <SelectValue placeholder={s.categoryPlaceholder} />
+                  </SelectTrigger>
+                  <SelectContent>
+                    {categories.map((c) => (
+                      <SelectItem key={c.id} value={c.id}>
+                        {c.name}
+                      </SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
+                {errors.categoryId && (
+                  <p className="text-xs text-destructive">{errors.categoryId}</p>
+                )}
               </div>
 
               <div className="flex flex-col gap-1.5">
                 <Label htmlFor="pf-unit">
                   {s.unit} <span className="text-destructive">*</span>
                 </Label>
-                <Select value={form.unit} onValueChange={(v) => set("unit", v)}>
-                  <SelectTrigger id="pf-unit" aria-invalid={Boolean(errors.unit)}>
+                <Select value={form.unitId} onValueChange={(v) => set("unitId", v)}>
+                  <SelectTrigger id="pf-unit" aria-invalid={Boolean(errors.unitId)}>
                     <SelectValue placeholder={s.unitPlaceholder} />
                   </SelectTrigger>
                   <SelectContent>
-                    {unitOptions.map((u) => (
-                      <SelectItem key={u} value={u}>
-                        {u}
+                    {units.map((u) => (
+                      <SelectItem key={u.id} value={u.id}>
+                        {u.name}
                       </SelectItem>
                     ))}
-                    <SelectItem value="__other__">{s.unitOther}</SelectItem>
                   </SelectContent>
                 </Select>
-                {form.unit === "__other__" && (
-                  <Input
-                    value={form.customUnit}
-                    onChange={(e) => set("customUnit", e.target.value)}
-                    placeholder={s.unitCustomPlaceholder}
-                    className="mt-1"
-                  />
-                )}
-                {errors.unit ? (
-                  <p className="text-xs text-destructive">{errors.unit}</p>
+                {errors.unitId ? (
+                  <p className="text-xs text-destructive">{errors.unitId}</p>
                 ) : (
                   <p className="text-xs text-muted-foreground">{s.unitHint}</p>
                 )}
+              </div>
+
+              <div className="flex flex-col gap-1.5">
+                <Label htmlFor="pf-brand">{s.brand}</Label>
+                <Select value={form.brandId} onValueChange={(v) => set("brandId", v)}>
+                  <SelectTrigger id="pf-brand">
+                    <SelectValue placeholder={s.brandNone} />
+                  </SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="">{s.brandNone}</SelectItem>
+                    {brands.map((b) => (
+                      <SelectItem key={b.id} value={b.id}>
+                        {b.name}
+                      </SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
               </div>
 
               <div className="flex flex-col gap-1.5">

@@ -20,12 +20,12 @@ export default async function ProductsPage({ searchParams }: PageProps) {
   const locale = await getLocale();
   const t = getDictionary(locale);
   const params = await searchParams;
-  const category = typeof params.category === "string" ? params.category : undefined;
+  const categoryId = typeof params.categoryId === "string" ? params.categoryId : undefined;
   const q = typeof params.q === "string" ? params.q.trim() : undefined;
 
   const where: Prisma.ProductWhereInput = {
     AND: [
-      category ? { category } : {},
+      categoryId ? { categoryId } : {},
       q
         ? {
             OR: [
@@ -39,20 +39,15 @@ export default async function ProductsPage({ searchParams }: PageProps) {
     ],
   };
 
-  const [products, categoryRows] = await Promise.all([
+  const [products, categories] = await Promise.all([
     prisma.product.findMany({
       where,
-      include: { tax: true },
+      include: { tax: true, category: true, unit: true, brand: true },
       orderBy: { createdAt: "desc" },
       take: 100,
     }),
-    prisma.product.findMany({ select: { category: true }, distinct: ["category"] }),
+    prisma.category.findMany({ where: { active: true }, orderBy: { name: "asc" } }),
   ]);
-
-  const categories = categoryRows
-    .map((p) => p.category)
-    .filter((c): c is string => Boolean(c))
-    .sort();
 
   return (
     <div className="flex flex-col gap-6">

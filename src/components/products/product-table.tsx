@@ -64,8 +64,8 @@ export function ProductTable({
               </div>
             </TableCell>
             <TableCell className="text-muted-foreground">{product.sku}</TableCell>
-            <TableCell className="text-muted-foreground">{product.category ?? "—"}</TableCell>
-            <TableCell className="text-muted-foreground">{product.unit}</TableCell>
+            <TableCell className="text-muted-foreground">{product.category?.name ?? "—"}</TableCell>
+            <TableCell className="text-muted-foreground">{product.unit.displayName}</TableCell>
             <TableCell className="text-muted-foreground">
               {product.tax ? product.tax.name : t.products.list.noTax}
             </TableCell>

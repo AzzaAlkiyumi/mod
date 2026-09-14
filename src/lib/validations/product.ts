@@ -5,8 +5,9 @@ export const DRUG_SCHEDULE_VALUES = ["NOT_SCHEDULED", "OTC", "H", "H1", "X", "G"
 export const productCreateSchema = z.object({
   name: z.string().trim().min(1, "English product name is required"),
   nameAr: z.string().trim().optional(),
-  category: z.string().trim().min(1, "Category is required"),
-  unit: z.string().trim().min(1, "Unit is required"),
+  categoryId: z.string().trim().min(1, "Category is required"),
+  unitId: z.string().trim().min(1, "Unit is required"),
+  brandId: z.string().trim().optional(),
   price: z.coerce.number({ error: "Enter a valid price" }).nonnegative("Price cannot be negative"),
   taxId: z.string().optional(),
   sku: z.string().trim().optional(),

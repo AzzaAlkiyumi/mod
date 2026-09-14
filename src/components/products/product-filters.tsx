@@ -15,14 +15,14 @@ import {
 } from "@/components/ui/select";
 import { useDictionary } from "@/i18n/dictionary-context";
 
-export function ProductFilters({ categories }: { categories: string[] }) {
+export function ProductFilters({ categories }: { categories: { id: string; name: string }[] }) {
   const router = useRouter();
   const searchParams = useSearchParams();
   const [isPending, startTransition] = useTransition();
   const { t } = useDictionary();
 
   const [q, setQ] = useState(searchParams.get("q") ?? "");
-  const category = searchParams.get("category") ?? "all";
+  const categoryId = searchParams.get("categoryId") ?? "all";
 
   const applyParam = useCallback(
     (key: string, value: string) => {
@@ -39,7 +39,7 @@ export function ProductFilters({ categories }: { categories: string[] }) {
     [router, searchParams],
   );
 
-  const hasFilters = category !== "all" || q;
+  const hasFilters = categoryId !== "all" || q;
 
   return (
     <div className="grid gap-4 border-b border-border p-4 md:grid-cols-[200px_1fr_auto] md:items-end">
@@ -48,8 +48,8 @@ export function ProductFilters({ categories }: { categories: string[] }) {
           {t.products.list.columns.category}
         </label>
         <Select
-          value={category}
-          onValueChange={(v) => applyParam("category", v === "all" ? "" : v)}
+          value={categoryId}
+          onValueChange={(v) => applyParam("categoryId", v === "all" ? "" : v)}
         >
           <SelectTrigger>
             <SelectValue />
@@ -57,8 +57,8 @@ export function ProductFilters({ categories }: { categories: string[] }) {
           <SelectContent>
             <SelectItem value="all">{t.products.list.allCategories}</SelectItem>
             {categories.map((c) => (
-              <SelectItem key={c} value={c}>
-                {c}
+              <SelectItem key={c.id} value={c.id}>
+                {c.name}
               </SelectItem>
             ))}
           </SelectContent>
