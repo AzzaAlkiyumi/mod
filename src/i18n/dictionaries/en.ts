@@ -36,6 +36,7 @@ const en = {
       products: "Products",
       printLabels: "Print labels",
       productSetup: "Product Setup",
+      taxManagement: "Tax Management",
       taxComponents: "Tax components",
       taxGroups: "Tax groups",
       taxClassifications: "Tax classifications",

@@ -46,6 +46,7 @@ const ar = {
       products: "المنتجات",
       printLabels: "طباعة الملصقات",
       productSetup: "إعداد المنتجات",
+      taxManagement: "إدارة الضرائب",
       taxComponents: "مكونات الضريبة",
       taxGroups: "مجموعات الضريبة",
       taxClassifications: "تصنيفات الضريبة",
