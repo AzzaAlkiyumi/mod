@@ -1,4 +1,5 @@
-import { PackageSearch } from "lucide-react";
+import Link from "next/link";
+import { Pencil } from "lucide-react";
 
 import {
   Table,
@@ -9,6 +10,7 @@ import {
   TableRow,
 } from "@/components/ui/table";
 import { ProductThumb } from "@/components/quotation/product-thumb";
+import { ProductEmptyState } from "@/components/products/product-empty-state";
 import { formatCurrency } from "@/lib/utils";
 import type { ProductWithTax } from "@/lib/types";
 import type { Dictionary } from "@/i18n/dictionaries/en";
@@ -24,15 +26,7 @@ export function ProductTable({
   locale: Locale;
 }) {
   if (products.length === 0) {
-    return (
-      <div className="flex flex-col items-center justify-center gap-3 py-20 text-center">
-        <div className="flex size-12 items-center justify-center rounded-full bg-muted">
-          <PackageSearch className="size-5 text-muted-foreground" />
-        </div>
-        <p className="font-medium">{t.products.list.empty.title}</p>
-        <p className="text-sm text-muted-foreground">{t.products.list.empty.subtitle}</p>
-      </div>
-    );
+    return <ProductEmptyState t={t} />;
   }
 
   return (
@@ -45,6 +39,7 @@ export function ProductTable({
           <TableHead>{t.products.list.columns.unit}</TableHead>
           <TableHead>{t.products.list.columns.tax}</TableHead>
           <TableHead className="text-end">{t.products.list.columns.price}</TableHead>
+          <TableHead className="text-end">{t.products.list.columns.actions}</TableHead>
         </TableRow>
       </TableHeader>
       <TableBody>
@@ -71,6 +66,15 @@ export function ProductTable({
             </TableCell>
             <TableCell className="text-end font-medium">
               {formatCurrency(product.price, locale)}
+            </TableCell>
+            <TableCell className="text-end">
+              <Link
+                href={`/admin/products/${product.id}/edit`}
+                aria-label={t.products.list.editAria(product.name)}
+                className="inline-flex size-8 items-center justify-center rounded-md text-muted-foreground hover:bg-accent hover:text-accent-foreground"
+              >
+                <Pencil className="size-4" />
+              </Link>
             </TableCell>
           </TableRow>
         ))}

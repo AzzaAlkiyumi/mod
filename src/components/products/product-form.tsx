@@ -36,6 +36,42 @@ interface NamedOption {
   name: string;
 }
 
+/** Shape of a product after the server page runs it through `serialize()`
+ * (Decimal -> number, Date -> ISO string) to cross the server/client
+ * boundary — not the raw Prisma `ProductWithTax` payload. */
+export interface EditableProduct {
+  id: string;
+  sku: string;
+  barcode: string | null;
+  name: string;
+  nameAr: string | null;
+  price: number;
+  taxId: string | null;
+  unitId: string;
+  categoryId: string | null;
+  brandId: string | null;
+  imageUrl: string | null;
+  descriptionEn: string | null;
+  descriptionAr: string | null;
+  shortDescription: string | null;
+  availableForSale: boolean;
+  featured: boolean;
+  trackStock: boolean;
+  soldByWeight: boolean;
+  trackBatches: boolean;
+  trackExpiry: boolean;
+  expiryDate: string | null;
+  reorderAt: number | null;
+  reorderQuantity: number | null;
+  costPrice: number | null;
+  mrp: number | null;
+  priceIncludesTax: boolean;
+  hsnCode: string | null;
+  drugScheduleId: string | null;
+  genericName: string | null;
+  manufacturer: string | null;
+}
+
 const emptyForm = {
   nameEn: "",
   nameAr: "",
@@ -68,26 +104,66 @@ const emptyForm = {
   manufacturer: "",
 };
 
+function productToForm(product: EditableProduct): typeof emptyForm {
+  return {
+    nameEn: product.name,
+    nameAr: product.nameAr ?? "",
+    categoryId: product.categoryId ?? "",
+    unitId: product.unitId,
+    brandId: product.brandId ?? "",
+    price: String(product.price),
+    taxId: product.taxId ?? "",
+    descriptionEn: product.descriptionEn ?? "",
+    descriptionAr: product.descriptionAr ?? "",
+    sku: product.sku,
+    barcode: product.barcode ?? "",
+    imageUrl: product.imageUrl ?? "",
+    shortDescription: product.shortDescription ?? "",
+    availableForSale: product.availableForSale,
+    featured: product.featured,
+    trackStock: product.trackStock,
+    soldByWeight: product.soldByWeight,
+    trackBatches: product.trackBatches,
+    trackExpiry: product.trackExpiry,
+    expiryDate: product.expiryDate ? product.expiryDate.slice(0, 10) : "",
+    reorderAt: product.reorderAt !== null ? String(product.reorderAt) : "",
+    reorderQuantity: product.reorderQuantity !== null ? String(product.reorderQuantity) : "",
+    costPrice: product.costPrice !== null ? String(product.costPrice) : "",
+    mrp: product.mrp !== null ? String(product.mrp) : "",
+    priceIncludesTax: product.priceIncludesTax,
+    hsnCode: product.hsnCode ?? "",
+    drugScheduleId: product.drugScheduleId ?? "",
+    genericName: product.genericName ?? "",
+    manufacturer: product.manufacturer ?? "",
+  };
+}
+
 export function ProductForm({
   categories,
   units,
   brands,
   taxes,
   drugSchedules,
+  product,
 }: {
   categories: NamedOption[];
   units: NamedOption[];
   brands: NamedOption[];
   taxes: TaxOption[];
   drugSchedules: NamedOption[];
+  /** When provided, the form edits this existing product (PATCH) instead of
+   * creating a new one (POST). */
+  product?: EditableProduct;
 }) {
   const router = useRouter();
   const { t, locale } = useDictionary();
   const s = t.products.form;
   const dir = locale === "ar" ? "rtl" : "ltr";
+  const isEdit = Boolean(product);
+  const initialForm = product ? productToForm(product) : emptyForm;
 
   const [tab, setTab] = useState<Tab>("general");
-  const [form, setForm] = useState(emptyForm);
+  const [form, setForm] = useState(initialForm);
   const [errors, setErrors] = useState<Record<string, string>>({});
   const [submitting, setSubmitting] = useState(false);
   const [uploading, setUploading] = useState(false);
@@ -113,7 +189,7 @@ export function ProductForm({
     return Object.keys(next).length === 0;
   }
 
-  async function handleCreate() {
+  async function handleSubmit() {
     if (submitting) return;
     if (!validate()) {
       toast.error(s.fixErrors);
@@ -122,8 +198,8 @@ export function ProductForm({
     }
     setSubmitting(true);
     try {
-      const res = await fetch("/api/products", {
-        method: "POST",
+      const res = await fetch(isEdit ? `/api/products/${product!.id}` : "/api/products", {
+        method: isEdit ? "PATCH" : "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({
           name: form.nameEn.trim(),
@@ -162,23 +238,24 @@ export function ProductForm({
         const fieldErrorList = Object.values(
           (json?.error?.fieldErrors ?? {}) as Record<string, string[]>,
         )[0];
-        const message = json?.error?.formErrors?.[0] ?? fieldErrorList?.[0] ?? s.createFailed;
+        const fallback = isEdit ? s.updateFailed : s.createFailed;
+        const message = json?.error?.formErrors?.[0] ?? fieldErrorList?.[0] ?? fallback;
         throw new Error(message);
       }
-      toast.success(s.createdToast(json.data.name));
+      toast.success(isEdit ? s.updatedToast(json.data.name) : s.createdToast(json.data.name));
       router.push("/admin/products");
       router.refresh();
     } catch (err) {
-      toast.error(err instanceof Error ? err.message : s.createFailed);
+      toast.error(err instanceof Error ? err.message : isEdit ? s.updateFailed : s.createFailed);
     } finally {
       setSubmitting(false);
     }
   }
 
   function handleDiscard() {
-    setForm(emptyForm);
+    setForm(initialForm);
     setErrors({});
-    toast.info(s.discardedToast);
+    toast.info(isEdit ? s.resetToast : s.discardedToast);
   }
 
   function generateSku() {
@@ -224,17 +301,21 @@ export function ProductForm({
             <ArrowLeft className={dir === "rtl" ? "size-4 -scale-x-100" : "size-4"} />
           </Link>
           <div>
-            <h1 className="text-2xl font-semibold tracking-tight">{s.newTitle}</h1>
-            <p className="mt-1 text-sm text-muted-foreground">{s.newSubtitle}</p>
+            <h1 className="text-2xl font-semibold tracking-tight">
+              {isEdit ? s.editTitle : s.newTitle}
+            </h1>
+            <p className="mt-1 text-sm text-muted-foreground">
+              {isEdit ? s.editSubtitle : s.newSubtitle}
+            </p>
           </div>
         </div>
         <div className="flex items-center gap-2">
           <Button type="button" variant="outline" onClick={handleDiscard} disabled={submitting}>
             {s.discard}
           </Button>
-          <Button type="button" onClick={handleCreate} disabled={submitting}>
+          <Button type="button" onClick={handleSubmit} disabled={submitting}>
             {submitting && <Loader2 className="size-4 animate-spin" />}
-            {submitting ? s.creating : s.create}
+            {submitting ? (isEdit ? s.saving : s.creating) : isEdit ? s.saveChanges : s.create}
           </Button>
         </div>
       </div>

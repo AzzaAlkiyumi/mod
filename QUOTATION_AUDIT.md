@@ -1250,3 +1250,46 @@ renders identically to before; all 5 new groups appear in the exact approved ord
 with `Administration` last and `Supply` immediately before it; `Inventory reports`'s
 label still navigates to its real existing page while its separate chevron opens/
 closes the 5 new children independently.
+
+## 25. Products: edit existing products + List/Grid view toggle
+
+Requested as two purely additive features on the existing Products section: (1) edit
+any existing product with the full form (same tabs/fields as create), (2) a List/Grid
+view toggle on the products list, with an explicit instruction not to change or remove
+anything already working.
+
+**Edit**: `productUpdateSchema` (`productCreateSchema.partial()`) backs new `GET`/
+`PATCH /api/products/[id]` routes, mirroring the same taxId/unitId/categoryId/brandId/
+drugScheduleId existence checks and P2002/P2025 handling already used by `POST /api/
+products`. `ProductForm` (previously create-only) now takes an optional `product`
+prop — when present, the form prefills from it (`productToForm`), the header/button
+labels/toasts switch to edit wording, submit does `PATCH` instead of `POST`, and
+Discard resets to the *loaded* values instead of a blank form. The prop's shape
+(`EditableProduct`) is the already-`serialize()`d form (Decimal → number, Date → ISO
+string) built explicitly in the new `/admin/products/[id]/edit` page — not the raw
+Prisma `ProductWithTax` payload, matching the established server/client boundary
+pattern used throughout this app. `ProductTable` gained one new trailing "Actions"
+column (an Edit icon-link) — every existing column, row, and piece of markup is
+untouched.
+
+**List/Grid toggle**: a `?view=grid` URL search param (same convention as the
+existing category/search filters) picked up by `/admin/products/page.tsx`, switching
+between the existing `ProductTable` and a new `ProductGrid` (responsive card grid,
+same data, each card linking to the edit page). A small `ProductViewToggle` client
+component (two icon buttons) reads/writes the param. `ProductTable` itself was not
+restructured — the toggle only decides which of the two existing/new components
+renders; a tiny `ProductEmptyState` was factored out so both share the identical
+empty state instead of duplicating it.
+
+**Verified**: `npx tsc --noEmit`, `npm run lint`, `npm run build` all clean. This
+session's sandbox Postgres had stopped again and its own copy of §23/§24's Tax
+Management migration still hadn't been applied here — restarted the service and ran
+`migrate deploy` in this disposable sandbox DB only (not the user's) to get a working
+local environment for testing. Full Playwright pass against real data: list view
+renders unchanged; grid toggle switches views via the URL param; clicking a product's
+Edit link (from either view) opens `/admin/products/[id]/edit` with every field
+correctly prefilled (title "Edit product"); editing and saving PATCHes successfully,
+toasts `"<name>" updated`, and redirects back to the list; the original create flow
+(`/admin/products/new`) was re-run end to end unchanged — same heading, same "Create
+product" button, new product created and appears in the list with its own success
+toast, proving nothing on the create path regressed.
