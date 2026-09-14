@@ -43,10 +43,17 @@ function useBreadcrumb(t: Dictionary) {
     });
     if (pathname.endsWith("/new")) {
       crumbs.push({
-        label: navItem.key === "products" ? t.products.form.newTitle : t.form.newTitle,
+        label:
+          navItem.key === "products"
+            ? t.products.form.newTitle
+            : navItem.key === "roles"
+              ? t.roles.form.newTitle
+              : t.form.newTitle,
       });
     } else if (isDetailRoute) {
-      crumbs.push({ label: t.detail.details.title });
+      crumbs.push({
+        label: navItem.key === "roles" ? t.roles.form.editTitle : t.detail.details.title,
+      });
     }
   }
   return crumbs;

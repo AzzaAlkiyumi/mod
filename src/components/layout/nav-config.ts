@@ -218,7 +218,7 @@ export const NAV_GROUPS: NavGroup[] = [
     key: "administration",
     items: [
       { key: "users", href: "/admin/coming-soon/users", icon: User },
-      { key: "roles", href: "/admin/coming-soon/roles", icon: Shield },
+      { key: "roles", href: "/admin/roles", icon: Shield },
       { key: "stores", href: "/admin/coming-soon/stores", icon: Store },
       { key: "terminals", href: "/admin/coming-soon/terminals", icon: Monitor },
       { key: "salesChannels", href: "/admin/coming-soon/salesChannels", icon: ExternalLink },

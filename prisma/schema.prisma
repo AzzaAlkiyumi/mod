@@ -77,9 +77,31 @@ model User {
   role       UserRole    @default(CASHIER)
   storeId    String?
   store      Store?      @relation(fields: [storeId], references: [id])
+  /// Dynamic, permission-based role (Administration > Roles) — additive and
+  /// independent of the legacy `role` enum above, which stays untouched.
+  roleId     String?
+  customRole Role?       @relation(fields: [roleId], references: [id])
   createdAt  DateTime    @default(now())
   quotations Quotation[]
   sales      Sale[]
+}
+
+/// A dynamic, permission-based role — see Administration > Roles.
+/// `permissions` holds keys from the static catalog in
+/// src/lib/permissions.ts. `isSystem` roles (the reference site's built-in
+/// Accountant/Admin/Cashier/Manager/Stock Keeper) can't be renamed or
+/// deleted, but their permission set and description can still be edited.
+model Role {
+  id          String   @id @default(cuid())
+  name        String
+  description String?
+  isSystem    Boolean  @default(false)
+  permissions String[] @default([])
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+  users       User[]
+
+  @@index([name])
 }
 
 model Customer {

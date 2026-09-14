@@ -1,6 +1,7 @@
 import { PrismaClient } from "../src/generated/prisma/client";
 import { PrismaPg } from "@prisma/adapter-pg";
 import { calculateQuotationTotals } from "../src/lib/calculations";
+import { ALL_PERMISSION_KEYS, PERMISSION_CATALOG } from "../src/lib/permissions";
 
 const adapter = new PrismaPg({ connectionString: process.env.DATABASE_URL });
 const prisma = new PrismaClient({ adapter });
@@ -22,6 +23,7 @@ async function main() {
   await prisma.drugSchedule.deleteMany();
   await prisma.customer.deleteMany();
   await prisma.user.deleteMany();
+  await prisma.role.deleteMany();
   await prisma.store.deleteMany();
 
   // Real company/legal details, as given by the user (from their own TECHNICAL
@@ -64,6 +66,129 @@ async function main() {
       storeId: mainStore.id,
     },
   });
+
+  // Roles (Administration > Roles) — reverse-engineered from a screen
+  // recording of https://hyper-pos.eshopweb.store/admin/roles. Independent
+  // of the User.role enum above (see src/lib/permissions.ts for the
+  // catalog). Permission counts match the reference site's 7 demo roles;
+  // exact key selections are this rebuild's own reasonable pick since the
+  // reference site's precise per-role grants weren't visible in the video.
+  const nonDangerousByCategory = (categoryKeys: string[]) =>
+    PERMISSION_CATALOG.filter((c) => categoryKeys.includes(c.key))
+      .flatMap((c) => c.permissions)
+      .filter((p) => !p.dangerous)
+      .map((p) => p.key);
+
+  const accountantPermissions = [
+    "accounting.view",
+    "accounting.manual_entry",
+    "accounting.reverse_entry",
+    "accounting.chart.update",
+    "accounting.lock_period",
+    "expenses.view",
+    "reports.view_financial",
+  ];
+  const cashierPermissions = [
+    "sales.create",
+    "sales.update",
+    "sales.held.create",
+    "sales.held.resume_others",
+    "sales.print_receipt",
+    "sales.view_own",
+    "sales.refund",
+    "sales.discount",
+    "returns.create",
+    "customers.view",
+    "customers.create",
+    "products.view",
+    "shifts.open",
+    "shifts.close_own",
+    "cash_drawer.pay_in",
+    "quotations.view_own",
+  ];
+  const stockKeeperPermissions = [
+    "products.view",
+    "products.update",
+    "products.adjust_stock",
+    "products.update_cost",
+    "products.transfer_stock",
+    "products.import",
+    "products.export",
+    "purchases.create",
+    "purchases.update",
+    "purchases.receive",
+    "purchases.view",
+    "suppliers.view",
+    "stores.view",
+  ];
+  const managerPermissions = nonDangerousByCategory(
+    PERMISSION_CATALOG.map((c) => c.key).filter((k) => !["backup", "updater", "users"].includes(k)),
+  ).slice(0, 77);
+  const mtCashierPermissions = nonDangerousByCategory([
+    "sales",
+    "customers",
+    "returns",
+    "quotations",
+    "shifts",
+    "products",
+  ]).slice(0, 32);
+
+  const [, adminRole, cashierRole] = await Promise.all([
+    prisma.role.create({
+      data: {
+        name: "Accountant",
+        description: "Accounting, expenses, and financial reports.",
+        isSystem: true,
+        permissions: accountantPermissions,
+      },
+    }),
+    prisma.role.create({
+      data: {
+        name: "Admin",
+        description: "Full access to everything.",
+        isSystem: true,
+        permissions: ALL_PERMISSION_KEYS,
+      },
+    }),
+    prisma.role.create({
+      data: {
+        name: "Cashier",
+        description: "Day-to-day cashier: sell, return, basic customer & shift management.",
+        isSystem: true,
+        permissions: cashierPermissions,
+      },
+    }),
+  ]);
+  await Promise.all([
+    prisma.role.create({
+      data: {
+        name: "Manager",
+        description: "All operations except dangerous administrative tasks.",
+        isSystem: true,
+        permissions: managerPermissions,
+      },
+    }),
+    prisma.role.create({
+      data: {
+        name: "Stock Keeper",
+        description: "Stock and purchasing operations.",
+        isSystem: true,
+        permissions: stockKeeperPermissions,
+      },
+    }),
+    prisma.role.create({
+      data: { name: "MT CASHIER", permissions: mtCashierPermissions },
+    }),
+    prisma.role.create({
+      data: { name: "test role", description: "test role", permissions: ["products.view"] },
+    }),
+  ]);
+
+  // Real user->role links so the Roles list's "Users" column shows genuine
+  // counts (the reference site's own demo counts aren't reproducible since
+  // assigning users to roles is part of the Users page, still Coming Soon).
+  await prisma.user.update({ where: { id: admin.id }, data: { roleId: adminRole.id } });
+  await prisma.user.update({ where: { id: cashier.id }, data: { roleId: cashierRole.id } });
 
   // Tax Management — classifications drive filing/reporting, tax groups are
   // the thing actually applied to products/categories (built from one or

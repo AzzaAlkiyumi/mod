@@ -1293,3 +1293,76 @@ toasts `"<name>" updated`, and redirects back to the list; the original create f
 (`/admin/products/new`) was re-run end to end unchanged — same heading, same "Create
 product" button, new product created and appears in the list with its own success
 toast, proving nothing on the create path regressed.
+
+## 26. Roles — Administration > Roles, reverse-engineered from a 38s video
+
+Requested as a full page build against a screen recording of
+`https://hyper-pos.eshopweb.store/admin/roles` and `/admin/roles/create`, replacing
+the "Coming Soon" placeholder previously wired at `nav.items.roles`. Preview-approved
+before any code, per this project's standing workflow for video-driven features. The
+video showed 20 permission categories totaling exactly 128 permissions (matching the
+reference "Admin" role's own permission count), so the full catalog was transcribed
+verbatim from the recording, frame by frame.
+
+**Schema — purely additive, `User.role` (the existing `UserRole` enum) untouched**: a
+new `Role` model (`id, name, description?, isSystem, permissions String[], createdAt,
+updatedAt`) plus a nullable `User.roleId` FK. This dynamic, permission-based role
+system is independent of the legacy enum by design — nothing that already reads
+`user.role` was touched. `src/lib/permissions.ts` holds the static 20-category/
+128-permission catalog as bilingual domain data (`labelEn`/`labelAr` inline, like
+`TaxComponent`/`DrugSchedule` names elsewhere), not dictionary keys — the Roles page's
+own chrome (titles, buttons, toasts) is the only part that went through `en.ts`/
+`ar.ts`, matching the established pattern that domain content lives as data while UI
+chrome lives in the dictionaries.
+
+**System roles**: per the approved decision, `isSystem` roles (Accountant, Admin,
+Cashier, Manager, Stock Keeper — matching the video's "SYSTEM" badge) can have their
+description and permissions edited but not their name, and can't be deleted.
+`PATCH /api/roles/[id]` rejects a name change when `existing.isSystem` and the name
+actually differs; `DELETE` returns 409 for any `isSystem` role. The two non-system
+demo roles from the video (MT CASHIER, test role) are fully editable/deletable.
+
+**Pages**: `/admin/roles` (list — search, sort by name/permissions/users, working CSV
+export via a client-built Blob download, kebab menu per row with Edit/Delete),
+`/admin/roles/new` (create — named `new` rather than `create` to match this project's
+own `/admin/products/new` convention, which also gets the shared header's "/new"
+breadcrumb special-case for free), `/admin/roles/[id]/edit` (same `RoleForm`,
+prefilled). Each of the 20 categories renders as a collapsible card with a live
+"selected/total" count and a "Select all" checkbox; each permission shows its label,
+technical key, and a "DANGEROUS" badge where the video showed one.
+
+**Shared header breadcrumb**: `app-header.tsx`'s `useBreadcrumb` only special-cased
+`navItem.key === "products"` for the "/new" title and had one generic fallback
+(`t.detail.details.title`, a Quotation-domain string) for every other detail route —
+so `/admin/roles/new` and `/admin/roles/[id]/edit` were showing "New quotation" /
+"Quotation details" verbatim. Fixed by adding one more `navItem.key === "roles"`
+branch in both places (additive ternary, zero change to any other route's existing
+behavior — verified the Products edit page's breadcrumb is bit-for-bit unchanged).
+
+**Seed**: the 7 demo roles from the video, with matching names, descriptions, and
+*exact* permission counts (Accountant 7, Admin 128, Cashier 16, Manager 77, Stock
+Keeper 13, MT CASHIER 32, test role 1) — verified against the DB after reseeding. The
+specific permission keys chosen per role are this rebuild's own reasonable picks
+(the video never showed which exact permissions a role like Manager or MT CASHIER
+carries, only the count), computed from the catalog by category/dangerous-flag
+filtering in `prisma/seed.ts`. Per the approved decision, the seeded `admin`/`cashier`
+users are linked via `roleId` to the new Admin/Cashier roles so the list's "Users"
+column shows one real, non-fabricated count each; every other role starts at 0 since
+assigning users to roles is part of the still-unbuilt Users page.
+
+**Verified**: `npx tsc --noEmit`, `npm run lint`, `npm run build` all clean. Sandbox
+Postgres needed a service restart again (same recurring sandbox-only issue as prior
+sections); `prisma migrate deploy` applied the new additive migration cleanly, and
+reseeding hit a stale-permission `P1010` once more, fixed the same way as before by
+granting the app role privileges directly, then found the real cause was `tsx` not
+loading `.env` when run standalone — worked once `DATABASE_URL` was exported first.
+Full Playwright pass against real data: list loads with the exact 7 seeded roles and
+correct SYSTEM badges; created a role, verified it appears with the right permission
+count, edited it, deleted it, count returns to 7 each time; confirmed a SYSTEM role's
+delete menu item is disabled and its name field is disabled on edit while its
+description and permissions (tested by bulk-toggling an entire category via "Select
+all") save correctly; confirmed search/sort work; confirmed Arabic/RTL rendering
+(labels, "نظامي"/"خطير" badges, checkbox alignment) matches the English layout
+structurally; re-verified `/admin/products`, `/admin/tax-management/groups`, and
+`/admin/coming-soon/users` (an untouched Coming Soon route) all still work exactly as
+before, and the sidebar's Administration > Roles link navigates correctly.
