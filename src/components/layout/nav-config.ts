@@ -19,29 +19,30 @@ import {
   BarChart3,
   Truck,
   Percent,
+  Layers,
+  ListTree,
+  Pill,
 } from "lucide-react";
 
 import type { Dictionary } from "@/i18n/dictionaries/en";
 
-export interface NavChild {
-  key: keyof Dictionary["nav"]["items"];
-  href: string;
-}
-
-/** A plain link has `href`; a group with `children` instead expands/collapses
- * in place (no href of its own) — used for Tax Management, matching the
- * reference site's real dropdown, unlike Product Setup which we deliberately
- * built as single-page tabs instead. */
 export interface NavItem {
   key: keyof Dictionary["nav"]["items"];
-  href?: string;
+  href: string;
   icon: LucideIcon;
-  children?: NavChild[];
 }
 
 export interface NavGroup {
   key: keyof Dictionary["nav"]["groups"];
   items: NavItem[];
+  /** When true, the group's own header becomes a click-to-expand/collapse
+   * toggle for its items (defaulting open while the current page is one of
+   * them) — a real sidebar dropdown, matching the reference site's "Tax
+   * Management" section exactly (it renders as its own group, not an item
+   * nested under Products). Every other group's items are always visible;
+   * Product Setup is deliberately still a single plain link (see §22 in
+   * QUOTATION_AUDIT.md), not a dropdown. */
+  collapsible?: boolean;
 }
 
 /** Mirrors the sidebar observed in the reference recording (hyper-pos.eshopweb.store/admin).
@@ -82,16 +83,16 @@ export const NAV_GROUPS: NavGroup[] = [
       { key: "products", href: "/admin/products", icon: Package },
       { key: "printLabels", href: "/admin/print-labels", icon: Tags },
       { key: "productSetup", href: "/admin/product-setup", icon: Settings },
-      {
-        key: "taxManagement",
-        icon: Percent,
-        children: [
-          { key: "taxComponents", href: "/admin/tax-management/components" },
-          { key: "taxGroups", href: "/admin/tax-management/groups" },
-          { key: "taxClassifications", href: "/admin/tax-management/classifications" },
-          { key: "drugSchedules", href: "/admin/drug-schedules" },
-        ],
-      },
+    ],
+  },
+  {
+    key: "taxManagement",
+    collapsible: true,
+    items: [
+      { key: "taxComponents", href: "/admin/tax-management/components", icon: Percent },
+      { key: "taxGroups", href: "/admin/tax-management/groups", icon: Layers },
+      { key: "taxClassifications", href: "/admin/tax-management/classifications", icon: ListTree },
+      { key: "drugSchedules", href: "/admin/drug-schedules", icon: Pill },
     ],
   },
   {
