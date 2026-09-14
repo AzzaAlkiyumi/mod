@@ -6,22 +6,16 @@ import { usePathname } from "next/navigation";
 import { ChevronDown, ReceiptText, Search, X } from "lucide-react";
 
 import { cn } from "@/lib/utils";
-import { NAV_GROUPS, type NavGroup } from "@/components/layout/nav-config";
+import { NAV_GROUPS } from "@/components/layout/nav-config";
 import { useDictionary } from "@/i18n/dictionary-context";
-
-function groupHasActiveItem(group: NavGroup, pathname: string | null) {
-  return group.items.some((i) => pathname === i.href || pathname?.startsWith(`${i.href}/`));
-}
 
 export function AppSidebar() {
   const pathname = usePathname();
   const { t } = useDictionary();
   const [query, setQuery] = useState("");
-  // A collapsible group defaults open while the current page is one of its
-  // items; `overrides` records an explicit click that flips away from that
-  // default, so collapsing works even on the group's own active page (and
-  // re-clicking re-opens it again).
-  const [overrides, setOverrides] = useState<Map<string, boolean>>(new Map());
+  // A collapsible group always starts collapsed, even while on one of its own
+  // pages — it only opens once the user explicitly clicks its header.
+  const [opened, setOpened] = useState<Set<string>>(new Set());
 
   const filteredGroups = useMemo(() => {
     const q = query.trim().toLowerCase();
@@ -32,11 +26,11 @@ export function AppSidebar() {
     })).filter((group) => group.items.length > 0);
   }, [query, t]);
 
-  function toggle(key: string, defaultOpen: boolean) {
-    setOverrides((prev) => {
-      const next = new Map(prev);
-      const current = next.has(key) ? next.get(key)! : defaultOpen;
-      next.set(key, !current);
+  function toggle(key: string) {
+    setOpened((prev) => {
+      const next = new Set(prev);
+      if (next.has(key)) next.delete(key);
+      else next.add(key);
       return next;
     });
   }
@@ -80,18 +74,14 @@ export function AppSidebar() {
           <p className="px-2.5 py-2 text-xs text-muted-foreground">{t.nav.noResults}</p>
         )}
         {filteredGroups.map((group) => {
-          const defaultOpen = groupHasActiveItem(group, pathname);
-          const isOpen =
-            !group.collapsible ||
-            Boolean(query.trim()) ||
-            (overrides.has(group.key) ? overrides.get(group.key)! : defaultOpen);
+          const isOpen = !group.collapsible || Boolean(query.trim()) || opened.has(group.key);
 
           return (
             <div key={group.key} className="mb-4">
               {group.collapsible ? (
                 <button
                   type="button"
-                  onClick={() => toggle(group.key, defaultOpen)}
+                  onClick={() => toggle(group.key)}
                   aria-expanded={isOpen}
                   className="flex w-full items-center gap-1 px-2 pb-1 text-[11px] font-semibold uppercase tracking-wider text-muted-foreground hover:text-foreground"
                 >
