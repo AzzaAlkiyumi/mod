@@ -1366,3 +1366,79 @@ all") save correctly; confirmed search/sort work; confirmed Arabic/RTL rendering
 structurally; re-verified `/admin/products`, `/admin/tax-management/groups`, and
 `/admin/coming-soon/users` (an untouched Coming Soon route) all still work exactly as
 before, and the sidebar's Administration > Roles link navigates correctly.
+
+## 27. Settings — Administration > Settings, with a genuinely functional Currency
+
+Requested against a 26s video of `/admin/settings` and `/admin/settings/currency`, with
+one explicit hard requirement: the base currency must be real, persisted, and drive
+every price/amount display in the app — not a mock value. Every other Settings card
+matches the video's layout but routes to Coming Soon (same established convention as
+Roles/§24), since only Currency was asked to be functional.
+
+**Schema**: one new `Setting` model, a true singleton (`id` fixed to the literal
+`"singleton"`) holding `currencyCode/currencySymbol/currencyDecimals/
+thousandsSeparator/decimalSeparator/symbolBeforeAmount`. Purely additive — no existing
+table or column touched. `src/lib/currencies.ts` is a separate static catalog (45 major
+world currencies with default symbol/decimals, Omani Rial included as required) used
+only by the settings form's dropdown and its "autofill on select" convenience; it isn't
+what `formatCurrency` reads at runtime.
+
+**Making a hardcoded formatter dynamic**: `formatCurrency` (`src/lib/utils.ts`) was
+previously a thin wrapper around `Intl.NumberFormat` with `currency: "OMR"` hardcoded
+— used from ~10 files across Products/POS/Quotation, both server and client
+components, always as a plain synchronous call inline in JSX. Rather than thread an
+async currency lookup through every call site, `formatCurrency` now reads a
+module-level `currentCurrencyFormat` variable (default: the app's original OMR/3-decimal
+behavior) and builds the string manually (`formatAmountWithConfig`, exported and reused
+by the settings page's live preview) instead of delegating to `Intl.NumberFormat`, since
+symbol/placement/separators are now independently admin-configured rather than derived
+from an ISO currency code. The function's signature (`value, locale`) is unchanged —
+every existing call site required zero edits. One deliberate, visible behavior change:
+the format is now one global setting instead of flipping symbol position per UI
+language, so English and Arabic show identical formatting (already true for digit
+shapes before this change — the old code forced `numberingSystem: "latn"` in both
+languages for the same reason).
+
+**The real bug this surfaced (Next.js RSC vs. client bundle)**: setting the module
+variable only from a `"use client"` hydrator component (rendered once at the root
+layout) fixed every *client* component's prices instantly, but `ProductTable`,
+`ProductGrid`, `QuotationTable`, and `QuotationDetailView` — the only formatCurrency
+call sites written as plain Server Components — kept showing the old currency even
+right after a confirmed-saved change. Root cause: Next.js bundles Server Components and
+Client Components separately, so `utils.ts`'s module-level cache is really *two*
+different instances (RSC bundle vs. client/SSR bundle) even though it's one source
+file; a client component's side effect only ever updates the client-bundle copy. Fixed
+by having the root layout (itself a Server Component) call `setCurrencyFormat()`
+*directly* in its own function body — updating the RSC-bundle copy — in addition to
+passing the value down to `<CurrencyFormatHydrator>` for the client-bundle copy. Both
+are necessary; confirmed by testing every affected file on both sides after the fix.
+
+**Pages**: `/admin/settings` (index grid, 22 cards, exact video order/icons/copy,
+`bg-primary/10` icon circles matching this app's existing accent color — which is
+already the same orange as the reference site's), `/admin/settings/currency` (Base
+currency search-combobox restyled from the same Command+Popover primitive already used
+by `CustomerSelector`, Display format section with symbol/decimal-places/separators/
+before-after toggle, a live Preview card, Save button). Selecting a currency autofills
+symbol + decimal places from the catalog (e.g. picking OMR sets 3 decimals) but every
+field stays independently editable afterward, matching the video.
+
+**API**: `GET/PUT /api/settings/currency` — PUT validates with Zod, upserts the
+singleton row, and calls `setCurrencyFormat()` immediately so the change is live for
+the rest of the process without waiting for the next request.
+
+**Shared header breadcrumb**: extended the same `navItem.key === "..."` ternary chain
+touched in §26 with one more branch for `settings` (additive only — Roles' and
+Products' existing breadcrumb behavior re-verified unchanged).
+
+**Verified**: `npx tsc --noEmit`, `npm run lint`, `npm run build` all clean. Full
+Playwright pass: 22 settings cards render with matching titles/descriptions; changed
+base currency OMR → USD through the real UI (search, select, autofilled symbol "$" and
+2 decimals, live preview updated instantly); saved; confirmed via a direct
+`GET /api/settings/currency` call that the DB genuinely persisted USD; confirmed prices
+updated to `$` formatting on `/admin/products` (list *and* grid view), `/admin/quotations`
+(list *and* detail), and `/admin/pos` — covering every Server and Client component call
+site; reloaded the currency settings page and confirmed USD still shown (real
+persistence, not mock); changed back to OMR and confirmed every one of those pages
+reverted to `OMR•••.000` (3 decimals) and the DB round-tripped correctly. Also verified
+in Arabic/RTL (labels, dropdown, live preview, breadcrumb) and re-confirmed
+`/admin/roles` and the Coming Soon fallback still work unchanged.

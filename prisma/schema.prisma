@@ -70,6 +70,23 @@ model Store {
   users        User[]
 }
 
+/// System-wide settings (Administration > Settings). A true singleton: the
+/// app only ever reads/writes the row with id "singleton" (see
+/// src/app/api/settings/currency/route.ts). Starts with the Currency &
+/// formatting fields only — the reference site's other Settings cards
+/// (Company profile, Regional, Receipt template, ...) aren't backed by
+/// real data yet and route to Coming Soon.
+model Setting {
+  id                 String   @id @default("singleton")
+  currencyCode       String   @default("OMR")
+  currencySymbol     String   @default("OMR")
+  currencyDecimals   Int      @default(3)
+  thousandsSeparator String   @default(",")
+  decimalSeparator   String   @default(".")
+  symbolBeforeAmount Boolean  @default(true)
+  updatedAt          DateTime @updatedAt
+}
+
 model User {
   id         String      @id @default(cuid())
   name       String

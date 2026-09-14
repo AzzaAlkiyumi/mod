@@ -225,7 +225,7 @@ export const NAV_GROUPS: NavGroup[] = [
       { key: "hardware", href: "/admin/coming-soon/hardware", icon: Printer },
       { key: "systemHealth", href: "/admin/coming-soon/systemHealth", icon: ShieldCheck },
       { key: "languages", href: "/admin/coming-soon/languages", icon: Globe },
-      { key: "settings", href: "/admin/coming-soon/settings", icon: Settings },
+      { key: "settings", href: "/admin/settings", icon: Settings },
     ],
   },
 ];

@@ -692,6 +692,128 @@ const en = {
       fixRequired: "Enter a role name first",
     },
   },
+  settings: {
+    index: {
+      title: "Settings",
+      subtitle: "Configure how the system behaves across every screen.",
+      cards: {
+        companyProfile: {
+          title: "Company profile",
+          description: "Your business name, legal details, address, and logo — shown on receipts, reports, and headers.",
+        },
+        brandingTheme: {
+          title: "Branding & theme",
+          description: "Accent color, favicon, and the default light/dark theme for the admin.",
+        },
+        regional: {
+          title: "Regional",
+          description: "Time zone and how dates and times are displayed across the system.",
+        },
+        currencyFormatting: {
+          title: "Currency & formatting",
+          description: "Base currency, symbol, placement, decimals, and number separators used everywhere prices show.",
+        },
+        receiptTemplate: {
+          title: "Receipt template",
+          description: "Paper size, what to show, and the editable header / footer / return-policy text that prints on every sale receipt.",
+        },
+        cashierPos: {
+          title: "Cashier (POS)",
+          description: "Layout, tile size, default theme, and which totals show on the cashier checkout screen.",
+        },
+        security: {
+          title: "Security",
+          description: "Sign-in policy for every account on this install — including whether one account may be signed in on more than one device at a time.",
+        },
+        headerFooterScripts: {
+          title: "Header & footer scripts",
+          description: "Add trusted analytics, tag-manager, or tracking snippets to selected browser pages.",
+        },
+        weighingScale: {
+          title: "Weighing scale",
+          description: "Decode scale-printed barcodes (embedded weight or price) so weighed items ring up automatically.",
+        },
+        stockLocations: {
+          title: "Stock locations",
+          description: "Name the shelf coordinates your shop actually uses — aisle, rack, shelf, bin — so staff can look up where a product is kept.",
+        },
+        loyaltyPoints: {
+          title: "Loyalty points",
+          description: "Reward repeat customers — set how points are earned on every sale, what they are worth when redeemed, and whether they expire.",
+        },
+        pricing: {
+          title: "Pricing",
+          description: "Cost-to-selling automation — auto-update selling price when goods are received at a new cost.",
+        },
+        numbering: {
+          title: "Numbering",
+          description: "Customise number formats for sales, refunds, held orders, and auto-generated product SKUs.",
+        },
+        emailSmtp: {
+          title: "Email & SMTP",
+          description: "How the system sends mail — password resets, receipts-by-email, and notifications. Test the connection right from here.",
+        },
+        whatsapp: {
+          title: "WhatsApp",
+          description: "Send transactional documents through free Click-to-Chat or an official API connection.",
+        },
+        paymentMethods: {
+          title: "Payment methods",
+          description: "Turn manual tender types — Cash, Card, UPI, Bank Transfer, Cheque — on or off so the cashier only sees what your store accepts.",
+        },
+        paymentGateways: {
+          title: "Payment gateways",
+          description: "Connect Stripe, Razorpay, Paystack, Flutterwave, and Mercado Pago so cashiers can take card payments via QR code or payment link.",
+        },
+        backup: {
+          title: "Backup",
+          description: "Schedule automatic backups, run one on demand, and download or delete what you have.",
+        },
+        schedulerCron: {
+          title: "Scheduler (cron job)",
+          description: "Set up the one cron job that automatic backups, scheduled reports, and low-stock alerts all depend on — and test that it is really running.",
+        },
+        updates: {
+          title: "Updates",
+          description: "See your current version, choose a release channel, and check for new versions.",
+        },
+        license: {
+          title: "License",
+          description: "Your license status, buyer details, and support window.",
+        },
+        privacyTerms: {
+          title: "Privacy & terms",
+          description: "Public privacy policy and terms of service — payment gateways need these URLs during onboarding.",
+        },
+      },
+    },
+    currency: {
+      back: "Back",
+      title: "Currency & formatting",
+      subtitle: "Pick your base currency and tune exactly how amounts are displayed across the system.",
+      save: "Save currency settings",
+      saving: "Saving…",
+      savedToast: "Currency settings saved",
+      saveFailed: "Failed to save currency settings",
+      fixRequired: "Fill in the symbol and decimal separator first",
+      baseCurrencySectionTitle: "Base currency",
+      baseCurrencySectionSubtitle: "Applied to every price, total, and report.",
+      baseCurrencyLabel: "Base currency",
+      baseCurrencyPlaceholder: "Select a currency",
+      baseCurrencySearchPlaceholder: "Search...",
+      baseCurrencyEmpty: "No currency found.",
+      displayFormatSectionTitle: "Display format",
+      displayFormatSectionSubtitle: "How amounts are written — symbol, placement, decimals, and separators.",
+      symbolLabel: "Symbol",
+      decimalPlacesLabel: "Decimal places",
+      thousandsSeparatorLabel: "Thousands separator",
+      decimalSeparatorLabel: "Decimal separator",
+      separatorHint: 'Leave blank for no grouping. Common: "," or "." or a space.',
+      symbolBeforeLabel: "Show symbol before the amount",
+      symbolBeforeHint: (on: string, off: string) => `On: ${on} · Off: ${off}`,
+      previewTitle: "Preview",
+    },
+  },
 };
 
 export default en;

@@ -52,7 +52,12 @@ function useBreadcrumb(t: Dictionary) {
       });
     } else if (isDetailRoute) {
       crumbs.push({
-        label: navItem.key === "roles" ? t.roles.form.editTitle : t.detail.details.title,
+        label:
+          navItem.key === "roles"
+            ? t.roles.form.editTitle
+            : navItem.key === "settings"
+              ? t.settings.currency.title
+              : t.detail.details.title,
       });
     }
   }
