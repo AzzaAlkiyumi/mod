@@ -11,8 +11,8 @@ import { Dialog, DialogContent, DialogTitle } from "@/components/ui/dialog";
 import { useDictionary } from "@/i18n/dictionary-context";
 
 function itemMatchesChild(item: NavItem, pathname: string | null) {
-  return item.children?.some(
-    (c) => pathname === c.href || pathname?.startsWith(`${c.href}/`),
+  return Boolean(
+    item.children?.some((c) => pathname === c.href || pathname?.startsWith(`${c.href}/`)),
   );
 }
 
@@ -21,7 +21,11 @@ export function MobileNav() {
   const pathname = usePathname();
   const { t } = useDictionary();
   const [query, setQuery] = useState("");
-  const [expanded, setExpanded] = useState<Set<string>>(new Set());
+  // A group defaults open when the current page is one of its children;
+  // `overrides` records an explicit click that flips away from that
+  // default, so collapsing works even while a child route stays active
+  // (and re-clicking re-opens it again).
+  const [overrides, setOverrides] = useState<Map<string, boolean>>(new Map());
 
   const filteredGroups = useMemo(() => {
     const q = query.trim().toLowerCase();
@@ -42,11 +46,11 @@ export function MobileNav() {
     })).filter((group) => group.items.length > 0);
   }, [query, t]);
 
-  function toggle(key: string) {
-    setExpanded((prev) => {
-      const next = new Set(prev);
-      if (next.has(key)) next.delete(key);
-      else next.add(key);
+  function toggle(key: string, defaultOpen: boolean) {
+    setOverrides((prev) => {
+      const next = new Map(prev);
+      const current = next.has(key) ? next.get(key)! : defaultOpen;
+      next.set(key, !current);
       return next;
     });
   }
@@ -100,12 +104,15 @@ export function MobileNav() {
 
                   if (item.children) {
                     const childActive = itemMatchesChild(item, pathname);
-                    const isOpen = expanded.has(item.key) || Boolean(query.trim()) || childActive;
+                    const defaultOpen = childActive;
+                    const isOpen =
+                      Boolean(query.trim()) ||
+                      (overrides.has(item.key) ? overrides.get(item.key)! : defaultOpen);
                     return (
                       <li key={item.key}>
                         <button
                           type="button"
-                          onClick={() => toggle(item.key)}
+                          onClick={() => toggle(item.key, defaultOpen)}
                           aria-expanded={isOpen}
                           className={cn(
                             "flex w-full items-center gap-2.5 rounded-md px-2.5 py-2 text-sm",
