@@ -973,13 +973,28 @@ separate migrations, never one, to avoid any data loss**:
    four new tables; add nullable `categoryId`/`unitId`/`brandId` columns to `Product`
    alongside temporary relation fields (`categoryRef`/`unitRef`), while the old
    `category`/`unit` string columns stayed untouched.
-2. A one-off script (`prisma/backfill-catalog.ts`, run once via `tsx` then deleted —
-   not part of the regular seed flow) read every distinct existing `Product.unit` /
-   `Product.category` string, created one real `Unit`/`Category` row per distinct
-   value (units bucketed into Count/Weight/Volume/Length/Time by a simple name
-   heuristic), and set every product's new `unitId`/`categoryId` to match. Verified
-   with a direct SQL join that every product's new relation resolved to the exact
-   same value as its old string before proceeding.
+2. A backfill script (`prisma/backfill-catalog.ts`, run via `npx tsx
+   prisma/backfill-catalog.ts` — not part of the regular seed flow, and **required**
+   between stage 1 and stage 2 on any database that already has product rows) reads
+   every distinct existing `Product.unit`/`Product.category` value via raw SQL (the
+   committed `schema.prisma` is already at its final post-migration shape, so the
+   generated Prisma Client has no typed field for the old columns — only raw SQL can
+   still see them, since they aren't physically dropped until stage 2), creates one
+   real `Unit`/`Category` row per distinct value (units bucketed into
+   Count/Weight/Volume/Length/Time by a simple name heuristic), and sets every
+   product's new `unitId`/`categoryId` to match. Idempotent and safe to re-run;
+   refuses (non-zero exit) if any product is left without a `unitId` after running,
+   which is exactly the condition stage 2 requires to succeed.
+
+   **This step is not optional on a database that already has products.** It was
+   initially run once against the development database and the script deleted
+   without committing it — anyone else applying these migrations to a database with
+   existing product rows hit `P3018` on stage 2 (`column "unitId" ... contains null
+   values`) with no way to recover except this exact script, which is why it's now
+   committed permanently rather than treated as throwaway. Recovering from that
+   specific failure: `npx prisma migrate resolve --rolled-back
+   20260913205634_add_catalog_taxonomy_stage2 --config prisma7.config.ts`, then run
+   the backfill script, then `migrate deploy` again.
 3. Stage 2 (`20260913205634_add_catalog_taxonomy_stage2`, hand-written — Prisma's own
    `migrate dev` refuses to even generate a migration file non-interactively once it
    detects the destructive "dropping a column with non-null values" warning, so this
