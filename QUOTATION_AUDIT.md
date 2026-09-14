@@ -1194,3 +1194,59 @@ succeeds, stage 2 is expected to fail here since backfill hasn't run yet) → `n
 prisma/backfill-tax-management.ts` → `npx prisma migrate deploy --config
 prisma7.config.ts` again (stage 2 now succeeds) → regenerate the Prisma Client if
 stale (§22's Windows staleness fix applies identically) → restart `npm run dev`.
+
+## 24. Sidebar completed to match the reference video — new nav-only sections, no DB changes
+
+Driven by a fifth reference video (34s recording of the reference site's full sidebar,
+scrolled top to bottom). The user asked for a strict, additive-only sidebar update:
+compare against the video, add every missing group/item, never touch, reorder, or
+restyle anything already built — and explicitly deferred building any real page behind
+the new links ("لا تبنِ الصفحات الفعلية خلف الروابط الآن"). A full written Preview
+(exact final group/item order, icon choices, and three explicit conflict points) was
+presented and approved before any file was touched, per the user's own gate.
+
+**New sidebar content** (all under `NAV_GROUPS` in `nav-config.ts`, new items keyed
+into `nav.items`/`nav.groups` in both dictionaries):
+- `Inventory` group extended: 4 new flat items (Stock adjustments, Stock
+  Reconciliation, Stock transfers, Adjustment reasons) plus a new nested dropdown on
+  the *existing* `Inventory reports` item (5 children: Available Stock, Low stock,
+  Oversold items, Batches & expiry, Stock Activity).
+- Three brand-new groups: `Purchasing & Expenses` (6 items), `Reports` (4 items),
+  `Accounting` (Journal, Chart of accounts, plus a 3-child `Accounting Setup`
+  dropdown).
+- `Administration` (new, 9 items) — placed as the last group, per explicit
+  instruction. Doing so required moving the existing `Supply` group's *position*
+  (content completely untouched) to just above it, since it was previously last;
+  approved explicitly as one of three flagged conflicts before implementation.
+- `Tax Management` was explicitly left untouched, even though the video shows its
+  real reference shape differs from what's currently built (flat items directly
+  under the group vs. this app's nested dropdown item) — the user's standing
+  instruction was "don't touch it even if it doesn't match the video."
+
+**`Inventory reports` — link + independent chevron, not a link-eating dropdown**:
+converting it to a children-only dropdown (like `Accounting Setup`) would have
+silently broken its existing working link to `/admin/inventory-reports`. Resolved
+(per explicit approval) by giving `NavItem` support for `href` *and* `children`
+together: the label stays an ordinary `<Link>` to the real page, and a visually
+separate small chevron button next to it independently toggles the 5 new children —
+two independent click targets on one row, neither interfering with the other.
+Applied identically in both `AppSidebar` (desktop) and `MobileNav`.
+
+**Every new leaf link points at a shared placeholder**: `/admin/coming-soon/
+[...slug]/page.tsx` (client component) reads the first path segment as a
+`nav.items` dictionary key and renders that item's translated label plus a generic
+"under construction" message — avoids hand-building ~30 near-identical empty page
+files for functionality (Journal, Users/Roles, Purchases...) explicitly out of scope
+for this pass. The existing "Suppliers" link is duplicated on purpose (once at its
+original `/admin/suppliers` under the untouched `Supply` group, once at
+`/admin/coming-soon/suppliers` under the new `Purchasing & Expenses` group) —
+approved explicitly rather than removing either.
+
+**Verified**: `npx tsc --noEmit`, `npm run lint`, and `npm run build` all clean; a
+full production build registers every existing route unchanged plus the one new
+`/admin/coming-soon/[...slug]` route. Playwright pass confirmed: every existing
+group/link (Products, Tax Management, the original `/admin/suppliers` link, etc.)
+renders identically to before; all 5 new groups appear in the exact approved order
+with `Administration` last and `Supply` immediately before it; `Inventory reports`'s
+label still navigates to its real existing page while its separate chevron opens/
+closes the 5 new children independently.

@@ -96,23 +96,62 @@ export function MobileNav() {
 
                   if (item.children) {
                     const isOpen = Boolean(query.trim()) || opened.has(item.key);
+                    const active =
+                      Boolean(item.href) &&
+                      (pathname === item.href || pathname?.startsWith(`${item.href}/`));
                     return (
                       <li key={item.key}>
-                        <button
-                          type="button"
-                          onClick={() => toggle(item.key)}
-                          aria-expanded={isOpen}
-                          className="flex w-full items-center gap-2.5 rounded-md px-2.5 py-2 text-sm text-foreground outline-none hover:bg-accent/60 focus-visible:ring-2 focus-visible:ring-ring/50"
-                        >
-                          <Icon className="size-4 shrink-0" />
-                          <span className="flex-1 truncate text-start">{t.nav.items[item.key]}</span>
-                          <ChevronDown
-                            className={cn(
-                              "size-3.5 shrink-0 transition-transform",
-                              isOpen && "rotate-180",
-                            )}
-                          />
-                        </button>
+                        <div className="flex items-center gap-0.5">
+                          {item.href ? (
+                            <Link
+                              href={item.href}
+                              onClick={() => setOpen(false)}
+                              className={cn(
+                                "flex flex-1 items-center gap-2.5 rounded-md px-2.5 py-2 text-sm",
+                                active
+                                  ? "bg-accent font-medium text-accent-foreground"
+                                  : "text-foreground hover:bg-accent/60",
+                              )}
+                            >
+                              <Icon className="size-4 shrink-0" />
+                              <span className="truncate">{t.nav.items[item.key]}</span>
+                            </Link>
+                          ) : (
+                            <button
+                              type="button"
+                              onClick={() => toggle(item.key)}
+                              aria-expanded={isOpen}
+                              className="flex flex-1 items-center gap-2.5 rounded-md px-2.5 py-2 text-sm text-foreground outline-none hover:bg-accent/60 focus-visible:ring-2 focus-visible:ring-ring/50"
+                            >
+                              <Icon className="size-4 shrink-0" />
+                              <span className="flex-1 truncate text-start">
+                                {t.nav.items[item.key]}
+                              </span>
+                              <ChevronDown
+                                className={cn(
+                                  "size-3.5 shrink-0 transition-transform",
+                                  isOpen && "rotate-180",
+                                )}
+                              />
+                            </button>
+                          )}
+                          {item.href && (
+                            <button
+                              type="button"
+                              onClick={() => toggle(item.key)}
+                              aria-expanded={isOpen}
+                              aria-label={t.nav.items[item.key]}
+                              className="flex shrink-0 items-center justify-center rounded-md p-2 text-foreground outline-none hover:bg-accent/60 focus-visible:ring-2 focus-visible:ring-ring/50"
+                            >
+                              <ChevronDown
+                                className={cn(
+                                  "size-3.5 shrink-0 transition-transform",
+                                  isOpen && "rotate-180",
+                                )}
+                              />
+                            </button>
+                          )}
+                        </div>
                         {isOpen && (
                           <ul className="mt-0.5 flex flex-col gap-0.5 border-s border-border ps-3.5">
                             {item.children.map((child) => {
