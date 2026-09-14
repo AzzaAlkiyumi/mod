@@ -91,8 +91,11 @@ export const NAV_GROUPS: NavGroup[] = [
   {
     key: "sales",
     items: [
-      { key: "salesHistory", href: "/admin/sales-history", icon: ClipboardList },
-      { key: "newSale", href: "/admin/sales/new", icon: Plus },
+      {
+        key: "salesHistory",
+        icon: ClipboardList,
+        children: [{ key: "newSale", href: "/admin/sales/new", icon: Plus }],
+      },
       { key: "quotations", href: "/admin/quotations", icon: FileText },
       { key: "kioskOrders", href: "/admin/kiosk-orders", icon: Tablet },
       { key: "channelOrders", href: "/admin/channel-orders", icon: ExternalLink },
