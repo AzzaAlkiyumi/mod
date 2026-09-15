@@ -8,6 +8,7 @@ use App\Http\Controllers\ProductController;
 use App\Http\Controllers\QuotationController;
 use App\Http\Controllers\RoleController;
 use App\Http\Controllers\SaleController;
+use App\Http\Controllers\SettingController;
 use App\Http\Controllers\StoreController;
 use App\Http\Controllers\TaxClassificationController;
 use App\Http\Controllers\TaxComponentController;
@@ -15,7 +16,6 @@ use App\Http\Controllers\TaxGroupController;
 use App\Http\Controllers\UnitCategoryController;
 use App\Http\Controllers\UnitController;
 use App\Http\Controllers\UploadController;
-use App\Models\Setting;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Route;
 
@@ -24,7 +24,8 @@ Route::get('/user', function (Request $request) {
 })->middleware('auth:sanctum');
 
 Route::prefix('v1')->group(function () {
-    Route::get('/settings/currency', fn () => response()->json(['data' => Setting::singleton()->toCurrencyFormat()]));
+    Route::get('/settings/currency', [SettingController::class, 'currency']);
+    Route::put('/settings/currency', [SettingController::class, 'updateCurrency']);
 
     Route::get('/products', [ProductController::class, 'index']);
     Route::get('/products/catalog', [ProductController::class, 'catalog']);

@@ -18,6 +18,8 @@ import POSPage from "@/pages/POS";
 import RolesIndexPage from "@/pages/roles/Index";
 import NewRolePage from "@/pages/roles/New";
 import EditRolePage from "@/pages/roles/Edit";
+import SettingsIndexPage from "@/pages/settings/Index";
+import CurrencySettingsPage from "@/pages/settings/Currency";
 
 function AdminShell() {
   return (
@@ -52,6 +54,8 @@ export function AppRoutes() {
         <Route path="roles" element={<RolesIndexPage />} />
         <Route path="roles/new" element={<NewRolePage />} />
         <Route path="roles/:id/edit" element={<EditRolePage />} />
+        <Route path="settings" element={<SettingsIndexPage />} />
+        <Route path="settings/currency" element={<CurrencySettingsPage />} />
         <Route path="coming-soon/:slug" element={<ComingSoonPage />} />
         <Route path="*" element={<ComingSoonPage />} />
       </Route>
