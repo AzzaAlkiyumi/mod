@@ -10,6 +10,10 @@ import TaxComponentsPage from "@/pages/tax-management/Components";
 import TaxClassificationsPage from "@/pages/tax-management/Classifications";
 import TaxGroupsPage from "@/pages/tax-management/Groups";
 import DrugSchedulesPage from "@/pages/DrugSchedules";
+import QuotationsIndexPage from "@/pages/quotations/Index";
+import NewQuotationPage from "@/pages/quotations/New";
+import QuotationDetailPage from "@/pages/quotations/Detail";
+import QuotationPreviewPage from "@/pages/QuotationPreview";
 
 function AdminShell() {
   return (
@@ -37,9 +41,15 @@ export function AppRoutes() {
         <Route path="tax-management/classifications" element={<TaxClassificationsPage />} />
         <Route path="tax-management/groups" element={<TaxGroupsPage />} />
         <Route path="drug-schedules" element={<DrugSchedulesPage />} />
+        <Route path="quotations" element={<QuotationsIndexPage />} />
+        <Route path="quotations/new" element={<NewQuotationPage />} />
+        <Route path="quotations/:id" element={<QuotationDetailPage />} />
         <Route path="coming-soon/:slug" element={<ComingSoonPage />} />
         <Route path="*" element={<ComingSoonPage />} />
       </Route>
+      {/* Deliberately outside AdminShell — the printable quotation document
+          renders with no sidebar/header chrome, closest to true print output. */}
+      <Route path="/quotation-preview/:id" element={<QuotationPreviewPage />} />
       <Route path="*" element={<Navigate to="/admin/products" replace />} />
     </Routes>
   );

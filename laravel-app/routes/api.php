@@ -2,8 +2,11 @@
 
 use App\Http\Controllers\BrandController;
 use App\Http\Controllers\CategoryController;
+use App\Http\Controllers\CustomerController;
 use App\Http\Controllers\DrugScheduleController;
 use App\Http\Controllers\ProductController;
+use App\Http\Controllers\QuotationController;
+use App\Http\Controllers\StoreController;
 use App\Http\Controllers\TaxClassificationController;
 use App\Http\Controllers\TaxComponentController;
 use App\Http\Controllers\TaxGroupController;
@@ -71,4 +74,15 @@ Route::prefix('v1')->group(function () {
     Route::post('/drug-schedules', [DrugScheduleController::class, 'store']);
     Route::match(['put', 'patch'], '/drug-schedules/{drug_schedule}', [DrugScheduleController::class, 'update']);
     Route::delete('/drug-schedules/{drug_schedule}', [DrugScheduleController::class, 'destroy']);
+
+    Route::get('/quotations', [QuotationController::class, 'index']);
+    Route::post('/quotations', [QuotationController::class, 'store']);
+    Route::post('/quotations/calculate', [QuotationController::class, 'calculate']);
+    Route::get('/quotations/{quotation}', [QuotationController::class, 'show']);
+    Route::put('/quotations/{quotation}', [QuotationController::class, 'update']);
+    Route::delete('/quotations/{quotation}', [QuotationController::class, 'destroy']);
+    Route::patch('/quotations/{quotation}/status', [QuotationController::class, 'updateStatus']);
+
+    Route::get('/customers', [CustomerController::class, 'index']);
+    Route::get('/stores', [StoreController::class, 'index']);
 });
