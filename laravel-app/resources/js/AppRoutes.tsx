@@ -14,6 +14,7 @@ import QuotationsIndexPage from "@/pages/quotations/Index";
 import NewQuotationPage from "@/pages/quotations/New";
 import QuotationDetailPage from "@/pages/quotations/Detail";
 import QuotationPreviewPage from "@/pages/QuotationPreview";
+import POSPage from "@/pages/POS";
 
 function AdminShell() {
   return (
@@ -44,6 +45,7 @@ export function AppRoutes() {
         <Route path="quotations" element={<QuotationsIndexPage />} />
         <Route path="quotations/new" element={<NewQuotationPage />} />
         <Route path="quotations/:id" element={<QuotationDetailPage />} />
+        <Route path="pos" element={<POSPage />} />
         <Route path="coming-soon/:slug" element={<ComingSoonPage />} />
         <Route path="*" element={<ComingSoonPage />} />
       </Route>

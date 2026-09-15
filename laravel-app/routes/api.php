@@ -6,6 +6,7 @@ use App\Http\Controllers\CustomerController;
 use App\Http\Controllers\DrugScheduleController;
 use App\Http\Controllers\ProductController;
 use App\Http\Controllers\QuotationController;
+use App\Http\Controllers\SaleController;
 use App\Http\Controllers\StoreController;
 use App\Http\Controllers\TaxClassificationController;
 use App\Http\Controllers\TaxComponentController;
@@ -85,4 +86,6 @@ Route::prefix('v1')->group(function () {
 
     Route::get('/customers', [CustomerController::class, 'index']);
     Route::get('/stores', [StoreController::class, 'index']);
+
+    Route::post('/sales', [SaleController::class, 'store']);
 });
