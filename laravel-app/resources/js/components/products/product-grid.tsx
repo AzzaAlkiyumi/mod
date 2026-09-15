@@ -1,4 +1,4 @@
-import { Link } from "@inertiajs/react";
+import { Link } from "react-router-dom";
 import { Pencil } from "lucide-react";
 
 import { Card, CardContent } from "@/components/ui/card";
@@ -30,7 +30,7 @@ export function ProductGrid({
             <div className="flex items-start justify-between gap-2">
               <ProductThumb src={product.imageUrl} alt={product.name} size={56} />
               <Link
-                href={`/admin/products/${product.id}/edit`}
+                to={`/admin/products/${product.id}/edit`}
                 aria-label={t.products.list.editAria(product.name)}
                 className="flex size-7 shrink-0 items-center justify-center rounded-md text-muted-foreground hover:bg-accent hover:text-accent-foreground"
               >

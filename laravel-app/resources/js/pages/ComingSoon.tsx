@@ -1,10 +1,9 @@
+import { useParams } from "react-router-dom";
 import { Construction } from "lucide-react";
 
 import { Card, CardContent } from "@/components/ui/card";
 import { useDictionary } from "@/i18n/dictionary-context";
 import type { Dictionary } from "@/i18n/dictionaries/en";
-import AdminLayout from "@/Layouts/AdminLayout";
-import type { ReactElement } from "react";
 
 function isNavItemKey(key: string, items: Dictionary["nav"]["items"]): key is keyof typeof items {
   return key in items;
@@ -14,8 +13,9 @@ function isNavItemKey(key: string, items: Dictionary["nav"]["items"]): key is ke
  * behind it yet. `slug` is the first path segment after /admin/coming-soon/,
  * expected to be a `nav.items` dictionary key so the title is always
  * correctly translated; falls back to the raw slug for any stray link. */
-export default function ComingSoonPage({ slug }: { slug: string }) {
+export default function ComingSoonPage() {
   const { t } = useDictionary();
+  const { slug } = useParams<{ slug: string }>();
   const key = slug ?? "";
   const title = isNavItemKey(key, t.nav.items) ? t.nav.items[key] : key;
 
@@ -33,5 +33,3 @@ export default function ComingSoonPage({ slug }: { slug: string }) {
     </div>
   );
 }
-
-ComingSoonPage.layout = (page: ReactElement) => <AdminLayout>{page}</AdminLayout>;

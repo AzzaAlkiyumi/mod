@@ -1,14 +1,13 @@
 import { useMemo, useState } from "react";
-import { Link } from "@inertiajs/react";
+import { Link, useLocation } from "react-router-dom";
 import { ChevronDown, ReceiptText, Search, X } from "lucide-react";
 
 import { cn } from "@/lib/utils";
 import { NAV_GROUPS, type NavItem } from "@/lib/nav-config";
 import { useDictionary } from "@/i18n/dictionary-context";
-import { usePathname } from "@/hooks/use-pathname";
 
 export function AppSidebar() {
-  const pathname = usePathname();
+  const pathname = useLocation().pathname;
   const { t } = useDictionary();
   const [query, setQuery] = useState("");
   // A dropdown item always starts collapsed, even while on one of its own
@@ -100,7 +99,7 @@ export function AppSidebar() {
                       <div className="flex items-center gap-0.5">
                         {item.href ? (
                           <Link
-                            href={item.href}
+                            to={item.href}
                             className={cn(
                               "flex flex-1 items-center gap-2.5 rounded-md px-2.5 py-2 text-sm transition-colors",
                               active
@@ -156,7 +155,7 @@ export function AppSidebar() {
                             return (
                               <li key={child.href}>
                                 <Link
-                                  href={child.href}
+                                  to={child.href}
                                   className={cn(
                                     "flex items-center gap-2.5 rounded-md px-2.5 py-1.5 text-sm transition-colors",
                                     active
@@ -180,7 +179,7 @@ export function AppSidebar() {
                 return (
                   <li key={item.href}>
                     <Link
-                      href={item.href!}
+                      to={item.href!}
                       className={cn(
                         "flex items-center gap-2.5 rounded-md px-2.5 py-2 text-sm transition-colors",
                         active

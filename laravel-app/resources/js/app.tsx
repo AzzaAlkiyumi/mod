@@ -1,41 +1,57 @@
 import "../css/app.css";
 import { createRoot } from "react-dom/client";
-import { createInertiaApp, router } from "@inertiajs/react";
+import { StrictMode, useEffect, useState } from "react";
+import { BrowserRouter } from "react-router-dom";
+
 import { DictionaryProvider } from "@/i18n/dictionary-context";
 import { setCurrencyFormat, DEFAULT_CURRENCY_FORMAT, type CurrencyFormat } from "@/lib/utils";
-import type { Locale } from "@/i18n/config";
+import { LOCALE_COOKIE, DEFAULT_LOCALE, dirFor, isLocale, type Locale } from "@/i18n/config";
+import { api } from "@/lib/api";
+import { AppRoutes } from "@/AppRoutes";
 
-createInertiaApp({
-  resolve: (name) => {
-    const pages = import.meta.glob<{ default: React.ComponentType }>("./Pages/**/*.tsx", {
-      eager: true,
-    });
-    return pages[`./Pages/${name}.tsx`];
-  },
-  setup({ el, App, props }) {
-    const page = props.initialPage.props as {
-      locale?: Locale;
-      currencyFormat?: CurrencyFormat;
-    };
-    const locale: Locale = page.locale ?? "en";
-    // No RSC/client-bundle split here (unlike the Next.js version) — Inertia
-    // pages are plain client components, so one hydration on boot covers
-    // every consumer of formatCurrency() for this page load.
-    setCurrencyFormat(page.currencyFormat ?? DEFAULT_CURRENCY_FORMAT);
+function readLocaleCookie(): Locale {
+  const match = document.cookie.match(new RegExp(`(?:^|; )${LOCALE_COOKIE}=([^;]*)`));
+  const value = match ? decodeURIComponent(match[1]) : null;
+  return isLocale(value) ? value : DEFAULT_LOCALE;
+}
 
-    // Every later client-side navigation re-shares currencyFormat too (see
-    // HandleInertiaRequests) — keep the in-memory cache in sync so a saved
-    // change on Settings > Currency is reflected the moment the next page
-    // loads, without a full browser reload.
-    router.on("success", (event) => {
-      const props = event.detail.page.props as { currencyFormat?: CurrencyFormat };
-      setCurrencyFormat(props.currencyFormat ?? DEFAULT_CURRENCY_FORMAT);
-    });
+/** Pure client SPA (no server-rendered props) — locale comes from a cookie
+ * read once at boot, and the system currency format is fetched from the
+ * API once at boot, mirroring the Next.js app's request-scoped hydration
+ * but on the client since there's no per-navigation server round trip. */
+function Root() {
+  const [locale] = useState<Locale>(readLocaleCookie);
+  const [ready, setReady] = useState(false);
 
-    createRoot(el).render(
+  useEffect(() => {
+    document.documentElement.lang = locale;
+    document.documentElement.dir = dirFor(locale);
+  }, [locale]);
+
+  useEffect(() => {
+    api
+      .get<{ data: CurrencyFormat }>("/settings/currency")
+      .then((res) => setCurrencyFormat(res.data.data))
+      .catch(() => setCurrencyFormat(DEFAULT_CURRENCY_FORMAT))
+      .finally(() => setReady(true));
+  }, []);
+
+  if (!ready) return null;
+
+  return (
+    <BrowserRouter>
       <DictionaryProvider locale={locale}>
-        <App {...props} />
-      </DictionaryProvider>,
-    );
-  },
-});
+        <AppRoutes />
+      </DictionaryProvider>
+    </BrowserRouter>
+  );
+}
+
+const el = document.getElementById("app");
+if (el) {
+  createRoot(el).render(
+    <StrictMode>
+      <Root />
+    </StrictMode>,
+  );
+}

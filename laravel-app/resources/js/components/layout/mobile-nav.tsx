@@ -1,16 +1,15 @@
 import { useMemo, useState } from "react";
-import { Link } from "@inertiajs/react";
+import { Link, useLocation } from "react-router-dom";
 import { ChevronDown, Menu, Search, X } from "lucide-react";
 
 import { cn } from "@/lib/utils";
 import { NAV_GROUPS, type NavItem } from "@/lib/nav-config";
 import { Dialog, DialogContent, DialogTitle } from "@/components/ui/dialog";
 import { useDictionary } from "@/i18n/dictionary-context";
-import { usePathname } from "@/hooks/use-pathname";
 
 export function MobileNav() {
   const [open, setOpen] = useState(false);
-  const pathname = usePathname();
+  const pathname = useLocation().pathname;
   const { t } = useDictionary();
   const [query, setQuery] = useState("");
   // A dropdown item always starts collapsed, even while on one of its own
@@ -102,7 +101,7 @@ export function MobileNav() {
                         <div className="flex items-center gap-0.5">
                           {item.href ? (
                             <Link
-                              href={item.href}
+                              to={item.href}
                               onClick={() => setOpen(false)}
                               className={cn(
                                 "flex flex-1 items-center gap-2.5 rounded-md px-2.5 py-2 text-sm",
@@ -159,7 +158,7 @@ export function MobileNav() {
                               return (
                                 <li key={child.href}>
                                   <Link
-                                    href={child.href}
+                                    to={child.href}
                                     onClick={() => setOpen(false)}
                                     className={cn(
                                       "flex items-center gap-2.5 rounded-md px-2.5 py-1.5 text-sm",
@@ -184,7 +183,7 @@ export function MobileNav() {
                   return (
                     <li key={item.href}>
                       <Link
-                        href={item.href!}
+                        to={item.href!}
                         onClick={() => setOpen(false)}
                         className={cn(
                           "flex items-center gap-2.5 rounded-md px-2.5 py-2 text-sm",

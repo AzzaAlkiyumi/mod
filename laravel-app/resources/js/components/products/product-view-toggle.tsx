@@ -1,24 +1,23 @@
-import { router } from "@inertiajs/react";
+import { useSearchParams } from "react-router-dom";
 import { LayoutGrid, List } from "lucide-react";
 
 import { cn } from "@/lib/utils";
 import { useDictionary } from "@/i18n/dictionary-context";
 
-export function ProductViewToggle({ view }: { view: "list" | "grid" }) {
+export function ProductViewToggle() {
+  const [searchParams, setSearchParams] = useSearchParams();
   const { t } = useDictionary();
+  const view = searchParams.get("view") === "grid" ? "grid" : "list";
 
   function setView(next: "list" | "grid") {
-    const params = new URLSearchParams(window.location.search);
-    if (next === "list") {
-      params.delete("view");
-    } else {
-      params.set("view", next);
-    }
-    const qs = params.toString();
-    router.get(`/admin/products${qs ? `?${qs}` : ""}`, undefined, {
-      preserveState: true,
-      preserveScroll: true,
-      replace: true,
+    setSearchParams((prev) => {
+      const params = new URLSearchParams(prev);
+      if (next === "list") {
+        params.delete("view");
+      } else {
+        params.set("view", next);
+      }
+      return params;
     });
   }
 

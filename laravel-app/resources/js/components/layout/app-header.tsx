@@ -1,4 +1,4 @@
-import { Link } from "@inertiajs/react";
+import { Link, useLocation } from "react-router-dom";
 import { Bell, ChevronDown, Download, Monitor, Search } from "lucide-react";
 
 import { NAV_GROUPS } from "@/lib/nav-config";
@@ -21,10 +21,9 @@ import {
 } from "@/components/ui/dropdown-menu";
 import { useDictionary } from "@/i18n/dictionary-context";
 import type { Dictionary } from "@/i18n/dictionaries/en";
-import { usePathname } from "@/hooks/use-pathname";
 
 function useBreadcrumb(t: Dictionary) {
-  const pathname = usePathname() ?? "";
+  const pathname = useLocation().pathname ?? "";
 
   const navItem = NAV_GROUPS.flatMap((g) => g.items).find(
     (item) => pathname === item.href || pathname.startsWith(`${item.href}/`),
@@ -77,7 +76,7 @@ export function AppHeader() {
           <span key={idx} className="flex items-center gap-1.5">
             {idx > 0 && <span className="text-muted-foreground">/</span>}
             {crumb.href ? (
-              <Link href={crumb.href} className="text-muted-foreground hover:text-foreground">
+              <Link to={crumb.href} className="text-muted-foreground hover:text-foreground">
                 {crumb.label}
               </Link>
             ) : (

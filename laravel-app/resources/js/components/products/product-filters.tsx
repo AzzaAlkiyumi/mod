@@ -1,5 +1,5 @@
-import { useCallback, useState, useTransition } from "react";
-import { router } from "@inertiajs/react";
+import { useState } from "react";
+import { useSearchParams } from "react-router-dom";
 import { Search, X } from "lucide-react";
 
 import { Input } from "@/components/ui/input";
@@ -13,37 +13,24 @@ import {
 } from "@/components/ui/select";
 import { useDictionary } from "@/i18n/dictionary-context";
 
-export function ProductFilters({
-  categories,
-  filters,
-}: {
-  categories: { id: string; name: string }[];
-  filters: { q?: string; categoryId?: string };
-}) {
-  const [isPending, startTransition] = useTransition();
+export function ProductFilters({ categories }: { categories: { id: string; name: string }[] }) {
+  const [searchParams, setSearchParams] = useSearchParams();
   const { t } = useDictionary();
 
-  const [q, setQ] = useState(filters.q ?? "");
-  const categoryId = filters.categoryId ?? "all";
+  const [q, setQ] = useState(searchParams.get("q") ?? "");
+  const categoryId = searchParams.get("categoryId") ?? "all";
 
-  const applyParam = useCallback(
-    (key: string, value: string) => {
-      const params = new URLSearchParams(window.location.search);
+  function applyParam(key: string, value: string) {
+    setSearchParams((prev) => {
+      const params = new URLSearchParams(prev);
       if (value) {
         params.set(key, value);
       } else {
         params.delete(key);
       }
-      startTransition(() => {
-        router.get(`/admin/products?${params.toString()}`, undefined, {
-          preserveState: true,
-          preserveScroll: true,
-          replace: true,
-        });
-      });
-    },
-    [],
-  );
+      return params;
+    });
+  }
 
   const hasFilters = categoryId !== "all" || q;
 
@@ -87,12 +74,10 @@ export function ProductFilters({
 
       <Button
         variant="outline"
-        disabled={!hasFilters || isPending}
+        disabled={!hasFilters}
         onClick={() => {
           setQ("");
-          startTransition(() => {
-            router.get("/admin/products", undefined, { preserveScroll: true, replace: true });
-          });
+          setSearchParams(new URLSearchParams());
         }}
       >
         <X /> {t.common.resetFilters}

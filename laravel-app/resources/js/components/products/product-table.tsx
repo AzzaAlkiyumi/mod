@@ -1,4 +1,4 @@
-import { Link } from "@inertiajs/react";
+import { Link } from "react-router-dom";
 import { Pencil } from "lucide-react";
 
 import {
@@ -69,7 +69,7 @@ export function ProductTable({
             </TableCell>
             <TableCell className="text-end">
               <Link
-                href={`/admin/products/${product.id}/edit`}
+                to={`/admin/products/${product.id}/edit`}
                 aria-label={t.products.list.editAria(product.name)}
                 className="inline-flex size-8 items-center justify-center rounded-md text-muted-foreground hover:bg-accent hover:text-accent-foreground"
               >
