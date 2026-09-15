@@ -6,6 +6,10 @@ import ProductsIndexPage from "@/pages/products/Index";
 import NewProductPage from "@/pages/products/New";
 import EditProductPage from "@/pages/products/Edit";
 import ProductSetupPage from "@/pages/product-setup/Index";
+import TaxComponentsPage from "@/pages/tax-management/Components";
+import TaxClassificationsPage from "@/pages/tax-management/Classifications";
+import TaxGroupsPage from "@/pages/tax-management/Groups";
+import DrugSchedulesPage from "@/pages/DrugSchedules";
 
 function AdminShell() {
   return (
@@ -29,6 +33,10 @@ export function AppRoutes() {
         <Route path="products/new" element={<NewProductPage />} />
         <Route path="products/:id/edit" element={<EditProductPage />} />
         <Route path="product-setup" element={<ProductSetupPage />} />
+        <Route path="tax-management/components" element={<TaxComponentsPage />} />
+        <Route path="tax-management/classifications" element={<TaxClassificationsPage />} />
+        <Route path="tax-management/groups" element={<TaxGroupsPage />} />
+        <Route path="drug-schedules" element={<DrugSchedulesPage />} />
         <Route path="coming-soon/:slug" element={<ComingSoonPage />} />
         <Route path="*" element={<ComingSoonPage />} />
       </Route>

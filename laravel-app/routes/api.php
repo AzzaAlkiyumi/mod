@@ -2,7 +2,11 @@
 
 use App\Http\Controllers\BrandController;
 use App\Http\Controllers\CategoryController;
+use App\Http\Controllers\DrugScheduleController;
 use App\Http\Controllers\ProductController;
+use App\Http\Controllers\TaxClassificationController;
+use App\Http\Controllers\TaxComponentController;
+use App\Http\Controllers\TaxGroupController;
 use App\Http\Controllers\UnitCategoryController;
 use App\Http\Controllers\UnitController;
 use App\Http\Controllers\UploadController;
@@ -47,4 +51,24 @@ Route::prefix('v1')->group(function () {
 
     Route::post('/uploads/products', [UploadController::class, 'products']);
     Route::post('/uploads/brands', [UploadController::class, 'brands']);
+
+    Route::get('/tax-components', [TaxComponentController::class, 'index']);
+    Route::post('/tax-components', [TaxComponentController::class, 'store']);
+    Route::match(['put', 'patch'], '/tax-components/{tax_component}', [TaxComponentController::class, 'update']);
+    Route::delete('/tax-components/{tax_component}', [TaxComponentController::class, 'destroy']);
+
+    Route::get('/tax-classifications', [TaxClassificationController::class, 'index']);
+    Route::post('/tax-classifications', [TaxClassificationController::class, 'store']);
+    Route::match(['put', 'patch'], '/tax-classifications/{tax_classification}', [TaxClassificationController::class, 'update']);
+    Route::delete('/tax-classifications/{tax_classification}', [TaxClassificationController::class, 'destroy']);
+
+    Route::get('/tax-groups', [TaxGroupController::class, 'index']);
+    Route::post('/tax-groups', [TaxGroupController::class, 'store']);
+    Route::match(['put', 'patch'], '/tax-groups/{tax_group}', [TaxGroupController::class, 'update']);
+    Route::delete('/tax-groups/{tax_group}', [TaxGroupController::class, 'destroy']);
+
+    Route::get('/drug-schedules', [DrugScheduleController::class, 'index']);
+    Route::post('/drug-schedules', [DrugScheduleController::class, 'store']);
+    Route::match(['put', 'patch'], '/drug-schedules/{drug_schedule}', [DrugScheduleController::class, 'update']);
+    Route::delete('/drug-schedules/{drug_schedule}', [DrugScheduleController::class, 'destroy']);
 });
