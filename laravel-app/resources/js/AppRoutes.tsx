@@ -15,6 +15,9 @@ import NewQuotationPage from "@/pages/quotations/New";
 import QuotationDetailPage from "@/pages/quotations/Detail";
 import QuotationPreviewPage from "@/pages/QuotationPreview";
 import POSPage from "@/pages/POS";
+import RolesIndexPage from "@/pages/roles/Index";
+import NewRolePage from "@/pages/roles/New";
+import EditRolePage from "@/pages/roles/Edit";
 
 function AdminShell() {
   return (
@@ -46,6 +49,9 @@ export function AppRoutes() {
         <Route path="quotations/new" element={<NewQuotationPage />} />
         <Route path="quotations/:id" element={<QuotationDetailPage />} />
         <Route path="pos" element={<POSPage />} />
+        <Route path="roles" element={<RolesIndexPage />} />
+        <Route path="roles/new" element={<NewRolePage />} />
+        <Route path="roles/:id/edit" element={<EditRolePage />} />
         <Route path="coming-soon/:slug" element={<ComingSoonPage />} />
         <Route path="*" element={<ComingSoonPage />} />
       </Route>
