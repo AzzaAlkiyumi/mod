@@ -16,7 +16,7 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@/components/ui/select";
-import { formatCurrency } from "@/lib/utils";
+import { formatCurrency, trimTrailingZeros } from "@/lib/utils";
 import { useDictionary } from "@/i18n/dictionary-context";
 import { api, apiErrorMessage } from "@/lib/api";
 
@@ -450,7 +450,7 @@ export function ProductForm({
                     <SelectItem value="">{s.taxNone}</SelectItem>
                     {taxes.map((tx) => (
                       <SelectItem key={tx.id} value={tx.id}>
-                        {tx.name} ({tx.rate}%)
+                        {tx.name} ({trimTrailingZeros(tx.rate)}%)
                       </SelectItem>
                     ))}
                   </SelectContent>

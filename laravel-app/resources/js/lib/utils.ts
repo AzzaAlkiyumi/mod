@@ -75,3 +75,10 @@ export function formatDate(value: Date | string | null | undefined) {
   const date = typeof value === "string" ? new Date(value) : value;
   return new Intl.DateTimeFormat("en-CA").format(date); // YYYY-MM-DD, matches reference UI
 }
+
+/** Strips the trailing zeros a Laravel `decimal:3` cast always sends
+ * (e.g. "5.000" or "5.500") down to the shortest exact representation
+ * ("5", "5.5") — display only, never touches the stored/submitted value. */
+export function trimTrailingZeros(value: number | string): string {
+  return String(Number(value));
+}

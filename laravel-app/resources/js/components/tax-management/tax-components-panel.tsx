@@ -10,6 +10,7 @@ import { Checkbox } from "@/components/ui/checkbox";
 import { useDictionary } from "@/i18n/dictionary-context";
 import { ConfirmDeleteDialog } from "@/components/product-setup/confirm-delete-dialog";
 import { api, apiErrorMessage } from "@/lib/api";
+import { trimTrailingZeros } from "@/lib/utils";
 
 interface ComponentRow {
   id: string;
@@ -40,7 +41,7 @@ export function TaxComponentsPanel({ initial }: { initial: ComponentRow[] }) {
 
   function selectExisting(row: ComponentRow) {
     setSelectedId(row.id);
-    setForm({ code: row.code, name: row.name, rate: String(row.rate), active: row.active });
+    setForm({ code: row.code, name: row.name, rate: trimTrailingZeros(row.rate), active: row.active });
   }
 
   async function handleSave() {
@@ -122,7 +123,7 @@ export function TaxComponentsPanel({ initial }: { initial: ComponentRow[] }) {
               <div className="flex-1">
                 <div className="text-sm font-medium">{row.name}</div>
                 <div className="text-xs text-muted-foreground" dir="ltr">
-                  {row.code} · {row.rate}%
+                  {row.code} · {trimTrailingZeros(row.rate)}%
                 </div>
               </div>
               {!row.active && (

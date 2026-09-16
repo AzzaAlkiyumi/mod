@@ -18,6 +18,7 @@ import {
 import { useDictionary } from "@/i18n/dictionary-context";
 import { ConfirmDeleteDialog } from "@/components/product-setup/confirm-delete-dialog";
 import { api, apiErrorMessage } from "@/lib/api";
+import { trimTrailingZeros } from "@/lib/utils";
 
 interface ComponentOption {
   id: string;
@@ -213,7 +214,7 @@ export function TaxGroupsPanel({
                   )}
                 </div>
                 <div className="text-xs text-muted-foreground" dir="ltr">
-                  {row.code} · {row.classification.name} · {row.rate}%
+                  {row.code} · {row.classification.name} · {trimTrailingZeros(row.rate)}%
                 </div>
               </div>
               <span className="text-xs text-muted-foreground">
@@ -285,7 +286,8 @@ export function TaxGroupsPanel({
                       onCheckedChange={() => toggleComponent(c.id)}
                     />
                     <span className="text-sm">
-                      {c.name} <span className="text-muted-foreground">({c.rate}%)</span>
+                      {c.name}{" "}
+                      <span className="text-muted-foreground">({trimTrailingZeros(c.rate)}%)</span>
                     </span>
                   </label>
                 ))}
@@ -295,7 +297,7 @@ export function TaxGroupsPanel({
                 <span className="text-xs font-medium uppercase tracking-wide text-muted-foreground">
                   {s.groups.combinedRate}
                 </span>
-                <span className="text-sm font-semibold">{combinedRate}%</span>
+                <span className="text-sm font-semibold">{trimTrailingZeros(combinedRate)}%</span>
               </div>
             </div>
             <label className="flex items-center gap-2.5">
