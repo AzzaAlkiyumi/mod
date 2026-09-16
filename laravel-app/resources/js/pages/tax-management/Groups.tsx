@@ -23,7 +23,7 @@ export default function TaxGroupsPage() {
           .map((c) => ({ id: c.id, name: c.name })),
         components: (components.data.data as { id: string; name: string; code: string; rate: number; active: boolean }[])
           .filter((c) => c.active)
-          .map((c) => ({ id: c.id, name: c.name, code: c.code, rate: c.rate })),
+          .map((c) => ({ id: c.id, name: c.name, code: c.code, rate: Number(c.rate) })),
       });
     });
   }, []);

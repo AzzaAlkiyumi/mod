@@ -81,7 +81,7 @@ export function TaxGroupsPanel({
     () =>
       components
         .filter((c) => form.componentIds.includes(c.id))
-        .reduce((sum, c) => sum + c.rate, 0),
+        .reduce((sum, c) => sum + Number(c.rate), 0),
     [components, form.componentIds],
   );
 
