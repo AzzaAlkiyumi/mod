@@ -165,15 +165,20 @@ export function TaxComponentsPanel({ initial }: { initial: ComponentRow[] }) {
             </div>
             <div className="flex flex-col gap-1.5">
               <Label htmlFor="tcm-rate">{s.components.rate}</Label>
-              <Input
-                id="tcm-rate"
-                type="number"
-                min={0}
-                step="0.001"
-                value={form.rate}
-                onChange={(e) => setForm((f) => ({ ...f, rate: e.target.value }))}
-                className="max-w-xs"
-              />
+              <div className="relative max-w-xs">
+                <Input
+                  id="tcm-rate"
+                  type="number"
+                  min={0}
+                  step="0.001"
+                  value={form.rate}
+                  onChange={(e) => setForm((f) => ({ ...f, rate: e.target.value }))}
+                  className="pe-7"
+                />
+                <span className="pointer-events-none absolute inset-y-0 end-3 flex items-center text-sm text-muted-foreground">
+                  %
+                </span>
+              </div>
             </div>
             <label className="flex items-center gap-2.5">
               <Checkbox
