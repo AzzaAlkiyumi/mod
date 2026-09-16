@@ -41,7 +41,7 @@ class UploadController extends Controller
         }
 
         $filename = Str::uuid()->toString().'.'.$ext;
-        $file->storeAs("public/uploads/{$folder}", $filename);
+        $file->storeAs("uploads/{$folder}", $filename, 'public');
 
         return response()->json(['data' => ['url' => "/storage/uploads/{$folder}/{$filename}"]], 201);
     }
