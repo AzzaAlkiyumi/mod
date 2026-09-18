@@ -32,6 +32,23 @@ api.interceptors.request.use(async (config) => {
   return config;
 });
 
+/** A 401 from any endpoint other than the auth ones itself means the
+ * session expired or was never established — tells AuthProvider to drop
+ * back to the login screen instead of leaving the page stuck mid-request. */
+api.interceptors.response.use(
+  (response) => response,
+  (error) => {
+    if (
+      axios.isAxiosError(error) &&
+      error.response?.status === 401 &&
+      !error.config?.url?.startsWith("/auth/")
+    ) {
+      window.dispatchEvent(new Event("auth:unauthorized"));
+    }
+    return Promise.reject(error);
+  },
+);
+
 /** Shape returned by every Laravel controller in this app for a failed
  * request — mirrors the Next.js API's Zod `.flatten()` error contract so
  * ported components' error-handling code didn't need to change. */

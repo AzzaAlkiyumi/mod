@@ -21,6 +21,7 @@ import {
 } from "@/components/ui/dropdown-menu";
 import { useDictionary } from "@/i18n/dictionary-context";
 import type { Dictionary } from "@/i18n/dictionaries/en";
+import { useAuth } from "@/lib/auth-context";
 
 function useBreadcrumb(t: Dictionary) {
   const pathname = useLocation().pathname ?? "";
@@ -64,6 +65,15 @@ function useBreadcrumb(t: Dictionary) {
 export function AppHeader() {
   const { t } = useDictionary();
   const crumbs = useBreadcrumb(t);
+  const { user, logout } = useAuth();
+  const displayName = user?.name ?? t.header.userName;
+  const displayRole = user?.roleName ?? t.header.role;
+  const initials = displayName
+    .split(" ")
+    .map((part) => part[0])
+    .slice(0, 2)
+    .join("")
+    .toUpperCase();
 
   return (
     <header className="no-print flex h-16 shrink-0 items-center gap-4 border-b border-border bg-background px-4 md:px-6">
@@ -141,21 +151,23 @@ export function AppHeader() {
         <DropdownMenu>
           <DropdownMenuTrigger className="flex items-center gap-2 rounded-md py-1 ps-1 pe-2 hover:bg-accent">
             <span className="flex size-7 items-center justify-center rounded-full bg-primary/15 text-xs font-semibold text-primary">
-              DC
+              {initials}
             </span>
             <span className="hidden flex-col items-start leading-tight sm:flex">
-              <span className="text-sm font-medium">{t.header.userName}</span>
-              <span className="text-[11px] text-muted-foreground">{t.header.role}</span>
+              <span className="text-sm font-medium">{displayName}</span>
+              <span className="text-[11px] text-muted-foreground">{displayRole}</span>
             </span>
             <ChevronDown className="size-3.5 text-muted-foreground" />
           </DropdownMenuTrigger>
           <DropdownMenuContent align="end">
-            <DropdownMenuLabel>{t.header.userName}</DropdownMenuLabel>
+            <DropdownMenuLabel>{displayName}</DropdownMenuLabel>
             <DropdownMenuSeparator />
             <DropdownMenuItem>{t.header.profile}</DropdownMenuItem>
             <DropdownMenuItem>{t.header.settings}</DropdownMenuItem>
             <DropdownMenuSeparator />
-            <DropdownMenuItem variant="destructive">{t.header.signOut}</DropdownMenuItem>
+            <DropdownMenuItem variant="destructive" onSelect={() => logout()}>
+              {t.header.signOut}
+            </DropdownMenuItem>
           </DropdownMenuContent>
         </DropdownMenu>
       </div>

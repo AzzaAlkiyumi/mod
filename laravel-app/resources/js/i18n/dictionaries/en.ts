@@ -814,6 +814,18 @@ const en = {
       previewTitle: "Preview",
     },
   },
+  auth: {
+    title: "Sign in",
+    subtitle: "Sign in to continue to Hyper POS.",
+    emailLabel: "Email",
+    emailPlaceholder: "you@example.com",
+    passwordLabel: "Password",
+    passwordPlaceholder: "••••••••",
+    signIn: "Sign in",
+    signingIn: "Signing in…",
+    signInFailed: "Invalid email or password",
+    signOut: "Sign out",
+  },
 };
 
 export default en;

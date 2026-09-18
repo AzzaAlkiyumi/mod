@@ -821,6 +821,18 @@ const ar = {
       previewTitle: "معاينة",
     },
   },
+  auth: {
+    title: "تسجيل الدخول",
+    subtitle: "سجّل الدخول للمتابعة إلى Hyper POS.",
+    emailLabel: "البريد الإلكتروني",
+    emailPlaceholder: "you@example.com",
+    passwordLabel: "كلمة المرور",
+    passwordPlaceholder: "••••••••",
+    signIn: "تسجيل الدخول",
+    signingIn: "جارٍ تسجيل الدخول…",
+    signInFailed: "البريد الإلكتروني أو كلمة المرور غير صحيحة",
+    signOut: "تسجيل الخروج",
+  },
 } satisfies Dictionary;
 
 export default ar;
