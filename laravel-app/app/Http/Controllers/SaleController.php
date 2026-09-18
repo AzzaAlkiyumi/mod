@@ -11,18 +11,30 @@ use App\Models\User;
 use App\Support\QuotationCalculator;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
+use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\DB;
 
 class SaleController extends Controller
 {
     use ValidatesJson;
 
+    public function show(Sale $sale): JsonResponse
+    {
+        $sale->load(['store', 'customer', 'createdBy', 'items.product']);
+
+        return response()->json(['data' => $sale]);
+    }
+
     public function store(Request $request): JsonResponse
     {
         $input = $this->jsonValidate($request, [
             'storeId' => ['required', 'string'],
             'customerId' => ['sometimes', 'nullable', 'string'],
-            'paymentMethod' => ['required', 'string', 'in:CASH,CARD'],
+            'paymentMethod' => ['required', 'string', 'in:CASH,CARD,UPI,BANK_TRANSFER,CHEQUE,QR'],
+            'paymentReference' => ['sometimes', 'nullable', 'string', 'max:255'],
+            'discountType' => ['sometimes', 'string', 'in:FIXED,PERCENT'],
+            'discountValue' => ['sometimes', 'numeric', 'min:0'],
+            'tenderedAmount' => ['sometimes', 'nullable', 'numeric', 'min:0'],
             'items' => ['required', 'array', 'min:1'],
             'items.*.productId' => ['required', 'string'],
             'items.*.quantity' => ['required', 'numeric', 'gt:0'],
@@ -61,23 +73,32 @@ class SaleController extends Controller
             ];
         }, $input['items']);
 
-        // A POS sale has no discount — this reuses QuotationCalculator purely
-        // for its per-line math.
-        $totals = QuotationCalculator::totals($lineInputs, 'FIXED', 0.0);
+        $discountType = $input['discountType'] ?? 'FIXED';
+        $discountValue = (float) ($input['discountValue'] ?? 0);
+        $totals = QuotationCalculator::totals($lineInputs, $discountType, $discountValue);
 
-        $currentUser = User::orderBy('created_at')->first();
+        $tenderedAmount = isset($input['tenderedAmount']) ? (float) $input['tenderedAmount'] : null;
+        $changeAmount = $tenderedAmount !== null ? round(max($tenderedAmount - $totals['total'], 0), 3) : null;
+
+        $currentUser = User::find(Auth::id()) ?? User::orderBy('created_at')->first();
         $number = 'SE-'.str_pad((string) (Sale::count() + 1), 6, '0', STR_PAD_LEFT);
 
-        $sale = DB::transaction(function () use ($input, $totals, $number, $currentUser) {
+        $sale = DB::transaction(function () use ($input, $totals, $number, $currentUser, $discountType, $discountValue, $tenderedAmount, $changeAmount) {
             $sale = Sale::create([
                 'number' => $number,
                 'store_id' => $input['storeId'],
                 'created_by_id' => $currentUser?->id,
                 'customer_id' => $input['customerId'] ?? null,
                 'payment_method' => $input['paymentMethod'],
+                'payment_reference' => $input['paymentReference'] ?? null,
+                'discount_type' => $discountType,
+                'discount_value' => $discountValue,
                 'subtotal' => $totals['subtotal'],
+                'discount_total' => $totals['discountTotal'],
                 'tax_total' => $totals['taxTotal'],
                 'total' => $totals['total'],
+                'tendered_amount' => $tenderedAmount,
+                'change_amount' => $changeAmount,
             ]);
 
             foreach ($totals['lines'] as $idx => $line) {

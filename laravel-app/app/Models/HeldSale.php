@@ -6,19 +6,16 @@ use Illuminate\Database\Eloquent\Attributes\Fillable;
 use Illuminate\Database\Eloquent\Concerns\HasUlids;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
-use Illuminate\Database\Eloquent\Relations\HasMany;
 
 /**
- * A completed POS sale — unlike a Quotation, a real, immediate, one-shot
- * transaction with no draft/status workflow, no header-level discount.
+ * A parked-in-progress POS sale (Hold / F4) — a cart snapshot that can be
+ * resumed later, possibly by a different cashier at the same store.
  */
 #[Fillable([
-    'number', 'store_id', 'created_by_id', 'customer_id',
-    'payment_method', 'payment_reference', 'discount_type', 'discount_value',
-    'subtotal', 'discount_total', 'tax_total', 'total',
-    'tendered_amount', 'change_amount',
+    'store_id', 'created_by_id', 'customer_id', 'reference',
+    'cart', 'discount_type', 'discount_value',
 ])]
-class Sale extends Model
+class HeldSale extends Model
 {
     use HasUlids;
 
@@ -31,21 +28,16 @@ class Sale extends Model
     protected function casts(): array
     {
         return [
-            'subtotal' => 'decimal:3',
+            'cart' => 'array',
             'discount_value' => 'decimal:3',
-            'discount_total' => 'decimal:3',
-            'tax_total' => 'decimal:3',
-            'total' => 'decimal:3',
-            'tendered_amount' => 'decimal:3',
-            'change_amount' => 'decimal:3',
             'created_at' => 'datetime',
         ];
     }
 
     protected static function booted(): void
     {
-        static::creating(function (Sale $sale) {
-            $sale->created_at ??= now();
+        static::creating(function (HeldSale $held) {
+            $held->created_at ??= now();
         });
     }
 
@@ -62,10 +54,5 @@ class Sale extends Model
     public function customer(): BelongsTo
     {
         return $this->belongsTo(Customer::class);
-    }
-
-    public function items(): HasMany
-    {
-        return $this->hasMany(SaleItem::class)->orderBy('sort_order');
     }
 }

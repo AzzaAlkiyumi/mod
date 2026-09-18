@@ -15,6 +15,7 @@ import NewQuotationPage from "@/pages/quotations/New";
 import QuotationDetailPage from "@/pages/quotations/Detail";
 import QuotationPreviewPage from "@/pages/QuotationPreview";
 import POSPage from "@/pages/POS";
+import POSReceiptPage from "@/pages/POSReceipt";
 import RolesIndexPage from "@/pages/roles/Index";
 import NewRolePage from "@/pages/roles/New";
 import EditRolePage from "@/pages/roles/Edit";
@@ -62,6 +63,7 @@ export function AppRoutes() {
       {/* Deliberately outside AdminShell — the printable quotation document
           renders with no sidebar/header chrome, closest to true print output. */}
       <Route path="/quotation-preview/:id" element={<QuotationPreviewPage />} />
+      <Route path="/pos-receipt/:id" element={<POSReceiptPage />} />
       <Route path="*" element={<Navigate to="/admin/pos" replace />} />
     </Routes>
   );

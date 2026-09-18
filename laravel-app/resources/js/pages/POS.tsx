@@ -29,6 +29,9 @@ export default function POSPage() {
           imageUrl: string | null;
           category: { name: string } | null;
           tax: { rate: number } | null;
+          featured: boolean;
+          soldByWeight: boolean;
+          availableForSale: boolean;
         }[]).map((p) => ({
           id: p.id,
           sku: p.sku,
@@ -39,6 +42,9 @@ export default function POSPage() {
           imageUrl: p.imageUrl,
           category: p.category?.name ?? null,
           taxRate: p.tax ? Number(p.tax.rate) : 0,
+          featured: p.featured,
+          soldByWeight: p.soldByWeight,
+          availableForSale: p.availableForSale,
         }));
         const stores = storesRes.data.data as StoreOption[];
         setData({

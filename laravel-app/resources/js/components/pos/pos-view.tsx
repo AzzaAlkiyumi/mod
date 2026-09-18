@@ -1,5 +1,5 @@
-import { useMemo, useState } from "react";
-import { Minus, Plus, ScanBarcode, Search, ShoppingCart, Trash2 } from "lucide-react";
+import { useEffect, useMemo, useState } from "react";
+import { Minus, Plus, ScanBarcode, Search, ShoppingCart, Tag, Trash2 } from "lucide-react";
 import { toast } from "sonner";
 
 import { Button } from "@/components/ui/button";
@@ -14,7 +14,12 @@ import {
 } from "@/components/ui/select";
 import { ProductThumb } from "@/components/products/product-thumb";
 import { CustomerSelector, type CustomerOption } from "@/components/quotation/customer-selector";
-import { formatCurrency } from "@/lib/utils";
+import { CheckoutModal, type CheckoutResult } from "@/components/pos/checkout-modal";
+import { SaleCompleteModal, type CompletedSale } from "@/components/pos/sale-complete-modal";
+import { HeldSalesPopover, type HeldSaleSummary } from "@/components/pos/held-sales-popover";
+import { DiscountPopover } from "@/components/pos/discount-popover";
+import { WeightEntryModal } from "@/components/pos/weight-entry-modal";
+import { cn, formatCurrency } from "@/lib/utils";
 import { useDictionary } from "@/i18n/dictionary-context";
 import { api, apiErrorMessage } from "@/lib/api";
 
@@ -28,6 +33,9 @@ export interface POSProduct {
   imageUrl: string | null;
   category: string | null;
   taxRate: number;
+  featured: boolean;
+  soldByWeight: boolean;
+  availableForSale: boolean;
 }
 
 interface StoreOption {
@@ -38,6 +46,16 @@ interface StoreOption {
 interface CartLine {
   product: POSProduct;
   quantity: number;
+}
+
+interface RawHeldSale {
+  id: string;
+  reference: string | null;
+  createdAt: string;
+  cart: { productId: string; quantity: number }[];
+  discountType: "FIXED" | "PERCENT";
+  discountValue: number;
+  customer: CustomerOption | null;
 }
 
 function round3(value: number) {
@@ -60,14 +78,38 @@ export function POSView({
   const [cart, setCart] = useState<CartLine[]>([]);
   const [customer, setCustomer] = useState<CustomerOption | null>(null);
   const [storeId, setStoreId] = useState(defaultStoreId);
-  const [paymentMethod, setPaymentMethod] = useState<"CASH" | "CARD">("CASH");
   const [submitting, setSubmitting] = useState(false);
+  const [discountType, setDiscountType] = useState<"FIXED" | "PERCENT">("FIXED");
+  const [discountValue, setDiscountValue] = useState(0);
+  const [checkoutOpen, setCheckoutOpen] = useState(false);
+  const [completedSale, setCompletedSale] = useState<CompletedSale | null>(null);
+  const [weightProduct, setWeightProduct] = useState<POSProduct | null>(null);
+  const [rawHeldSales, setRawHeldSales] = useState<RawHeldSale[]>([]);
+
+  function refreshHeldSales() {
+    api
+      .get("/held-sales", { params: { storeId } })
+      .then((res) => setRawHeldSales(res.data.data))
+      .catch(() => {});
+  }
+
+  useEffect(() => {
+    refreshHeldSales();
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [storeId]);
 
   const categories = useMemo(() => {
-    const set = new Set<string>();
-    for (const p of products) if (p.category) set.add(p.category);
-    return Array.from(set).sort();
+    const counts = new Map<string, number>();
+    for (const p of products) {
+      if (!p.category) continue;
+      counts.set(p.category, (counts.get(p.category) ?? 0) + 1);
+    }
+    return Array.from(counts.entries())
+      .sort((a, b) => a[0].localeCompare(b[0]))
+      .map(([name, count]) => ({ name, count }));
   }, [products]);
+
+  const quickPicks = useMemo(() => products.filter((p) => p.featured).slice(0, 8), [products]);
 
   const filteredProducts = useMemo(() => {
     const q = query.trim().toLowerCase();
@@ -82,17 +124,38 @@ export function POSView({
     });
   }, [products, query, category]);
 
-  function addToCart(product: POSProduct) {
+  function addToCart(product: POSProduct, quantity = 1) {
+    if (!product.availableForSale) return;
+    if (product.soldByWeight) {
+      setWeightProduct(product);
+      return;
+    }
     setCart((prev) => {
       const existing = prev.find((l) => l.product.id === product.id);
       if (existing) {
         return prev.map((l) =>
-          l.product.id === product.id ? { ...l, quantity: l.quantity + 1 } : l,
+          l.product.id === product.id ? { ...l, quantity: l.quantity + quantity } : l,
         );
       }
-      return [...prev, { product, quantity: 1 }];
+      return [...prev, { product, quantity }];
     });
     toast.success(t.pos.addedToast(product.name));
+  }
+
+  function confirmWeight(weight: number) {
+    if (!weightProduct) return;
+    const product = weightProduct;
+    setCart((prev) => {
+      const existing = prev.find((l) => l.product.id === product.id);
+      if (existing) {
+        return prev.map((l) =>
+          l.product.id === product.id ? { ...l, quantity: round3(l.quantity + weight) } : l,
+        );
+      }
+      return [...prev, { product, quantity: weight }];
+    });
+    toast.success(t.pos.addedToast(product.name));
+    setWeightProduct(null);
   }
 
   function updateQuantity(productId: string, quantity: number) {
@@ -105,6 +168,13 @@ export function POSView({
 
   function removeLine(productId: string) {
     setCart((prev) => prev.filter((l) => l.product.id !== productId));
+  }
+
+  function clearOrder() {
+    setCart([]);
+    setCustomer(null);
+    setDiscountType("FIXED");
+    setDiscountValue(0);
   }
 
   function handleBarcodeSubmit() {
@@ -129,10 +199,13 @@ export function POSView({
     }
     subtotal = round3(subtotal);
     tax = round3(tax);
-    return { subtotal, tax, total: round3(subtotal + tax) };
-  }, [cart]);
+    const discount = round3(
+      discountType === "PERCENT" ? (subtotal * discountValue) / 100 : Math.min(discountValue, subtotal),
+    );
+    return { subtotal, tax, discount, total: round3(subtotal - discount + tax) };
+  }, [cart, discountType, discountValue]);
 
-  async function handleCompleteSale() {
+  async function submitSale(result: CheckoutResult) {
     if (cart.length === 0) {
       toast.error(t.pos.toasts.emptyCart);
       return;
@@ -142,12 +215,22 @@ export function POSView({
       const res = await api.post("/sales", {
         storeId,
         customerId: customer?.id,
-        paymentMethod,
+        paymentMethod: result.paymentMethod,
+        paymentReference: result.paymentReference,
+        discountType,
+        discountValue,
+        tenderedAmount: result.tenderedAmount,
         items: cart.map((l) => ({ productId: l.product.id, quantity: l.quantity })),
       });
-      toast.success(t.pos.toasts.completed(res.data.data.number));
-      setCart([]);
-      setCustomer(null);
+      const sale = res.data.data;
+      setCheckoutOpen(false);
+      setCompletedSale({
+        id: sale.id,
+        number: sale.number,
+        total: Number(sale.total),
+        changeAmount: sale.changeAmount !== null ? Number(sale.changeAmount) : null,
+      });
+      clearOrder();
     } catch (err) {
       toast.error(apiErrorMessage(err, t.pos.toasts.failed));
     } finally {
@@ -155,11 +238,77 @@ export function POSView({
     }
   }
 
+  async function holdOrder() {
+    if (cart.length === 0) {
+      toast.error(t.pos.toasts.emptyCart);
+      return;
+    }
+    try {
+      await api.post("/held-sales", {
+        storeId,
+        customerId: customer?.id,
+        discountType,
+        discountValue,
+        cart: cart.map((l) => ({ productId: l.product.id, quantity: l.quantity })),
+      });
+      toast.success(t.pos.hold.savedToast);
+      clearOrder();
+      refreshHeldSales();
+    } catch (err) {
+      toast.error(apiErrorMessage(err, t.pos.hold.failed));
+    }
+  }
+
+  function resumeHeld(id: string) {
+    const held = rawHeldSales.find((h) => h.id === id);
+    if (!held) return;
+    const lines: CartLine[] = [];
+    for (const entry of held.cart) {
+      const product = products.find((p) => p.id === entry.productId);
+      if (product) lines.push({ product, quantity: entry.quantity });
+    }
+    setCart(lines);
+    setCustomer(held.customer);
+    setDiscountType(held.discountType);
+    setDiscountValue(Number(held.discountValue));
+    api.delete(`/held-sales/${id}`).finally(refreshHeldSales);
+    toast.success(t.pos.hold.resumedToast);
+  }
+
+  function deleteHeld(id: string) {
+    api
+      .delete(`/held-sales/${id}`)
+      .then(refreshHeldSales)
+      .catch(() => {});
+  }
+
+  const heldSummaries: HeldSaleSummary[] = rawHeldSales.map((h) => {
+    let total = 0;
+    let itemCount = 0;
+    for (const entry of h.cart) {
+      const product = products.find((p) => p.id === entry.productId);
+      if (!product) continue;
+      total += entry.quantity * product.price;
+      itemCount += 1;
+    }
+    return {
+      id: h.id,
+      reference: h.reference,
+      createdAt: h.createdAt,
+      itemCount,
+      total: round3(total),
+      customer: h.customer,
+    };
+  });
+
   return (
     <div className="flex flex-col gap-6">
-      <div>
-        <h1 className="text-2xl font-semibold tracking-tight">{t.pos.title}</h1>
-        <p className="mt-1 text-sm text-muted-foreground">{t.pos.subtitle}</p>
+      <div className="flex items-start justify-between gap-4">
+        <div>
+          <h1 className="text-2xl font-semibold tracking-tight">{t.pos.title}</h1>
+          <p className="mt-1 text-sm text-muted-foreground">{t.pos.subtitle}</p>
+        </div>
+        <HeldSalesPopover heldSales={heldSummaries} onResume={resumeHeld} onDelete={deleteHeld} />
       </div>
 
       <div className="grid grid-cols-1 gap-6 lg:grid-cols-[1fr_360px]">
@@ -193,26 +342,51 @@ export function POSView({
           </div>
 
           {categories.length > 0 && (
-            <div className="flex flex-wrap gap-1.5">
+            <div className="flex gap-1.5 overflow-x-auto pb-1">
               <Button
                 type="button"
                 size="sm"
                 variant={category === null ? "default" : "outline"}
+                className="shrink-0"
                 onClick={() => setCategory(null)}
               >
                 {t.pos.allCategories}
+                <span className="ms-1 opacity-70">{products.length}</span>
               </Button>
               {categories.map((c) => (
                 <Button
-                  key={c}
+                  key={c.name}
                   type="button"
                   size="sm"
-                  variant={category === c ? "default" : "outline"}
-                  onClick={() => setCategory(c)}
+                  variant={category === c.name ? "default" : "outline"}
+                  className="shrink-0"
+                  onClick={() => setCategory(c.name)}
                 >
-                  {c}
+                  {c.name}
+                  <span className="ms-1 opacity-70">{c.count}</span>
                 </Button>
               ))}
+            </div>
+          )}
+
+          {quickPicks.length > 0 && (
+            <div className="flex flex-col gap-1.5">
+              <p className="text-xs font-semibold uppercase tracking-wide text-muted-foreground">
+                {t.pos.quickPicks}
+              </p>
+              <div className="flex gap-2 overflow-x-auto pb-1">
+                {quickPicks.map((p) => (
+                  <button
+                    key={p.id}
+                    type="button"
+                    onClick={() => addToCart(p)}
+                    className="flex shrink-0 items-center gap-2 rounded-full border border-border bg-card px-3 py-1.5 text-sm shadow-sm hover:border-primary/40 hover:bg-accent/40"
+                  >
+                    <span className="font-medium">{p.name}</span>
+                    <span className="text-muted-foreground">{formatCurrency(p.price, locale)}</span>
+                  </button>
+                ))}
+              </div>
             </div>
           )}
 
@@ -226,9 +400,20 @@ export function POSView({
                 <button
                   key={product.id}
                   type="button"
+                  disabled={!product.availableForSale}
                   onClick={() => addToCart(product)}
-                  className="flex flex-col items-start gap-2 rounded-lg border border-border bg-card p-3 text-start shadow-sm transition-colors hover:border-primary/40 hover:bg-accent/40"
+                  className={cn(
+                    "relative flex flex-col items-start gap-2 rounded-lg border border-border bg-card p-3 text-start shadow-sm transition-colors",
+                    product.availableForSale
+                      ? "hover:border-primary/40 hover:bg-accent/40"
+                      : "cursor-not-allowed opacity-60",
+                  )}
                 >
+                  {!product.availableForSale && (
+                    <span className="absolute end-2 top-2 rounded-full bg-destructive/10 px-2 py-0.5 text-[10px] font-medium text-destructive">
+                      {t.pos.outOfStock}
+                    </span>
+                  )}
                   <ProductThumb
                     src={product.imageUrl}
                     alt={product.name}
@@ -239,7 +424,12 @@ export function POSView({
                     <span className="text-sm font-medium leading-tight">{product.name}</span>
                     <span className="text-xs text-muted-foreground">SKU {product.sku}</span>
                   </div>
-                  <span className="text-sm font-semibold">{formatCurrency(product.price, locale)}</span>
+                  <span className="text-sm font-semibold">
+                    {formatCurrency(product.price, locale)}
+                    {product.soldByWeight && (
+                      <span className="text-xs font-normal text-muted-foreground"> / {product.unit}</span>
+                    )}
+                  </span>
                 </button>
               ))}
             </div>
@@ -259,7 +449,7 @@ export function POSView({
               )}
             </div>
             {cart.length > 0 && (
-              <Button type="button" variant="ghost" size="sm" onClick={() => setCart([])}>
+              <Button type="button" variant="ghost" size="sm" onClick={clearOrder}>
                 {t.pos.cart.clear}
               </Button>
             )}
@@ -278,29 +468,35 @@ export function POSView({
                       {formatCurrency(line.product.price, locale)} / {line.product.unit}
                     </span>
                   </div>
-                  <div className="flex items-center gap-1">
-                    <Button
-                      type="button"
-                      variant="outline"
-                      size="icon"
-                      className="size-7"
-                      aria-label={t.pos.cart.decreaseQty(line.product.name)}
-                      onClick={() => updateQuantity(line.product.id, line.quantity - 1)}
-                    >
-                      <Minus className="size-3.5" />
-                    </Button>
-                    <span className="w-6 text-center text-sm">{line.quantity}</span>
-                    <Button
-                      type="button"
-                      variant="outline"
-                      size="icon"
-                      className="size-7"
-                      aria-label={t.pos.cart.increaseQty(line.product.name)}
-                      onClick={() => updateQuantity(line.product.id, line.quantity + 1)}
-                    >
-                      <Plus className="size-3.5" />
-                    </Button>
-                  </div>
+                  {line.product.soldByWeight ? (
+                    <span className="w-16 text-center text-sm">
+                      {line.quantity} {line.product.unit}
+                    </span>
+                  ) : (
+                    <div className="flex items-center gap-1">
+                      <Button
+                        type="button"
+                        variant="outline"
+                        size="icon"
+                        className="size-7"
+                        aria-label={t.pos.cart.decreaseQty(line.product.name)}
+                        onClick={() => updateQuantity(line.product.id, line.quantity - 1)}
+                      >
+                        <Minus className="size-3.5" />
+                      </Button>
+                      <span className="w-6 text-center text-sm">{line.quantity}</span>
+                      <Button
+                        type="button"
+                        variant="outline"
+                        size="icon"
+                        className="size-7"
+                        aria-label={t.pos.cart.increaseQty(line.product.name)}
+                        onClick={() => updateQuantity(line.product.id, line.quantity + 1)}
+                      >
+                        <Plus className="size-3.5" />
+                      </Button>
+                    </div>
+                  )}
                   <Button
                     type="button"
                     variant="ghost"
@@ -347,29 +543,36 @@ export function POSView({
             </div>
           )}
 
-          <div className="flex flex-col gap-1.5">
-            <label className="text-xs font-medium uppercase tracking-wide text-muted-foreground">
-              {t.pos.payment.label}
-            </label>
-            <Select
-              value={paymentMethod}
-              onValueChange={(v) => setPaymentMethod(v as "CASH" | "CARD")}
+          <DiscountPopover
+            discountType={discountType}
+            discountValue={discountValue}
+            onApply={(type, value) => {
+              setDiscountType(type);
+              setDiscountValue(value);
+            }}
+          >
+            <button
+              type="button"
+              className="flex items-center gap-1.5 text-sm text-primary hover:underline"
             >
-              <SelectTrigger className="w-full">
-                <SelectValue />
-              </SelectTrigger>
-              <SelectContent>
-                <SelectItem value="CASH">{t.pos.payment.CASH}</SelectItem>
-                <SelectItem value="CARD">{t.pos.payment.CARD}</SelectItem>
-              </SelectContent>
-            </Select>
-          </div>
+              <Tag className="size-3.5" />
+              {discountValue > 0
+                ? `${t.pos.discount.label} · ${discountType === "PERCENT" ? `${discountValue}%` : formatCurrency(discountValue, locale)}`
+                : t.pos.discount.label}
+            </button>
+          </DiscountPopover>
 
           <div className="flex flex-col gap-1 border-t border-border pt-3 text-sm">
             <div className="flex items-center justify-between text-muted-foreground">
               <span>{t.pos.summary.subtotal}</span>
               <span>{formatCurrency(totals.subtotal, locale)}</span>
             </div>
+            {totals.discount > 0 && (
+              <div className="flex items-center justify-between text-muted-foreground">
+                <span>{t.pos.summary.discount}</span>
+                <span>-{formatCurrency(totals.discount, locale)}</span>
+              </div>
+            )}
             <div className="flex items-center justify-between text-muted-foreground">
               <span>{t.pos.summary.tax}</span>
               <span>{formatCurrency(totals.tax, locale)}</span>
@@ -380,16 +583,50 @@ export function POSView({
             </div>
           </div>
 
-          <Button
-            type="button"
-            size="lg"
-            disabled={submitting || cart.length === 0}
-            onClick={handleCompleteSale}
-          >
-            {submitting ? t.pos.completing : t.pos.completeSale}
-          </Button>
+          <div className="flex gap-2">
+            <Button
+              type="button"
+              variant="outline"
+              size="lg"
+              className="flex-1"
+              disabled={cart.length === 0}
+              onClick={holdOrder}
+            >
+              {t.pos.hold.button}
+            </Button>
+            <Button
+              type="button"
+              size="lg"
+              className="flex-[2]"
+              disabled={cart.length === 0}
+              onClick={() => setCheckoutOpen(true)}
+            >
+              {t.pos.completeSale}
+            </Button>
+          </div>
         </Card>
       </div>
+
+      <CheckoutModal
+        open={checkoutOpen}
+        onOpenChange={setCheckoutOpen}
+        total={totals.total}
+        itemCount={cart.length}
+        submitting={submitting}
+        onSubmit={submitSale}
+      />
+
+      <SaleCompleteModal
+        sale={completedSale}
+        onClose={() => setCompletedSale(null)}
+        onNewSale={() => setCompletedSale(null)}
+      />
+
+      <WeightEntryModal
+        product={weightProduct}
+        onClose={() => setWeightProduct(null)}
+        onConfirm={confirmWeight}
+      />
     </div>
   );
 }

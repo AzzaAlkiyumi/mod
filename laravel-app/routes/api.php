@@ -5,6 +5,7 @@ use App\Http\Controllers\BrandController;
 use App\Http\Controllers\CategoryController;
 use App\Http\Controllers\CustomerController;
 use App\Http\Controllers\DrugScheduleController;
+use App\Http\Controllers\HeldSaleController;
 use App\Http\Controllers\ProductController;
 use App\Http\Controllers\QuotationController;
 use App\Http\Controllers\RoleController;
@@ -97,7 +98,12 @@ Route::prefix('v1')->middleware('auth:sanctum')->group(function () {
     Route::get('/customers', [CustomerController::class, 'index']);
     Route::get('/stores', [StoreController::class, 'index']);
 
+    Route::get('/sales/{sale}', [SaleController::class, 'show']);
     Route::post('/sales', [SaleController::class, 'store']);
+
+    Route::get('/held-sales', [HeldSaleController::class, 'index']);
+    Route::post('/held-sales', [HeldSaleController::class, 'store']);
+    Route::delete('/held-sales/{held_sale}', [HeldSaleController::class, 'destroy']);
 
     Route::get('/roles', [RoleController::class, 'index']);
     Route::post('/roles', [RoleController::class, 'store']);
