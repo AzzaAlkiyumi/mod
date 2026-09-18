@@ -36,9 +36,9 @@ function AdminShell() {
 export function AppRoutes() {
   return (
     <Routes>
-      <Route path="/" element={<Navigate to="/admin/products" replace />} />
+      <Route path="/" element={<Navigate to="/admin/pos" replace />} />
       <Route path="/admin" element={<AdminShell />}>
-        <Route index element={<Navigate to="/admin/products" replace />} />
+        <Route index element={<Navigate to="/admin/pos" replace />} />
         <Route path="products" element={<ProductsIndexPage />} />
         <Route path="products/new" element={<NewProductPage />} />
         <Route path="products/:id/edit" element={<EditProductPage />} />
@@ -62,7 +62,7 @@ export function AppRoutes() {
       {/* Deliberately outside AdminShell — the printable quotation document
           renders with no sidebar/header chrome, closest to true print output. */}
       <Route path="/quotation-preview/:id" element={<QuotationPreviewPage />} />
-      <Route path="*" element={<Navigate to="/admin/products" replace />} />
+      <Route path="*" element={<Navigate to="/admin/pos" replace />} />
     </Routes>
   );
 }
