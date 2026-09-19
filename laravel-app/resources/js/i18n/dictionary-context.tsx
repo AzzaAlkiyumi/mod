@@ -1,7 +1,8 @@
 
 import { createContext, useContext, type ReactNode } from "react";
+import { DirectionProvider } from "@radix-ui/react-direction";
 
-import type { Locale } from "@/i18n/config";
+import { dirFor, type Locale } from "@/i18n/config";
 import { getDictionary } from "@/i18n/get-dictionary";
 
 // Only the locale (a plain string) crosses the server→client boundary here — the
@@ -17,7 +18,15 @@ export function DictionaryProvider({
   locale: Locale;
   children: ReactNode;
 }) {
-  return <LocaleContext.Provider value={locale}>{children}</LocaleContext.Provider>;
+  return (
+    <LocaleContext.Provider value={locale}>
+      {/* Radix's popper-based components (DropdownMenu, Select, Popover...)
+       * don't read the page's dir="rtl" from the DOM — without this they
+       * always position themselves as if the page were LTR, which is what
+       * threw the dropdown/select menus miles off in Arabic. */}
+      <DirectionProvider dir={dirFor(locale)}>{children}</DirectionProvider>
+    </LocaleContext.Provider>
+  );
 }
 
 /** Client-component hook: `const { t, locale } = useDictionary();` */
