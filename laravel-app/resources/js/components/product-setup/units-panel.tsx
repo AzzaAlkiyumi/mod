@@ -78,6 +78,12 @@ export function UnitsPanel({
       toast.error(s.common.fixRequired);
       return;
     }
+    // A unit is either a base unit (neither field set) or converts to one
+    // (both set) — half-filled would silently save a broken conversion.
+    if (form.baseUnitId && !form.conversionFactor.trim()) {
+      toast.error(s.common.fixRequired);
+      return;
+    }
     setSaving(true);
     try {
       const isNew = selectedId === "new";
@@ -85,8 +91,11 @@ export function UnitsPanel({
         shortCode: form.shortCode.trim(),
         displayName: form.displayName.trim(),
         measurementCategoryId: form.measurementCategoryId,
-        baseUnitId: form.baseUnitId || undefined,
-        conversionFactor: form.conversionFactor || undefined,
+        // Explicit null (not an omitted key) so clearing the base unit or
+        // factor on an existing row actually persists — omitting the key
+        // here would leave the previously-saved value untouched instead.
+        baseUnitId: form.baseUnitId || null,
+        conversionFactor: form.baseUnitId ? form.conversionFactor.trim() : null,
         active: form.active,
       };
       const res = isNew
@@ -233,11 +242,14 @@ export function UnitsPanel({
             </div>
             {form.baseUnitId && (
               <div className="flex flex-col gap-1.5">
-                <Label htmlFor="unit-factor">{s.units.conversionFactor}</Label>
+                <Label htmlFor="unit-factor">
+                  {s.units.conversionFactor} <span className="text-destructive">*</span>
+                </Label>
                 <Input
                   id="unit-factor"
                   type="number"
                   step="0.000001"
+                  min="0"
                   value={form.conversionFactor}
                   onChange={(e) => setForm((f) => ({ ...f, conversionFactor: e.target.value }))}
                 />

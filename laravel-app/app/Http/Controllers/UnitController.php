@@ -52,6 +52,20 @@ class UnitController extends Controller
     {
         $input = $this->jsonValidate($request, $this->rules(partial: true));
 
+        if (array_key_exists('baseUnitId', $input) && ! empty($input['baseUnitId'])) {
+            if ($input['baseUnitId'] === $unit->id) {
+                return $this->formErrorResponse('A unit cannot be its own base unit');
+            }
+
+            $current = Unit::find($input['baseUnitId']);
+            while ($current !== null) {
+                if ($current->id === $unit->id) {
+                    return $this->formErrorResponse('That base unit would create a circular conversion chain');
+                }
+                $current = $current->base_unit_id ? Unit::find($current->base_unit_id) : null;
+            }
+        }
+
         $update = [];
         if (array_key_exists('shortCode', $input)) {
             $update['short_code'] = $input['shortCode'];
@@ -101,8 +115,12 @@ class UnitController extends Controller
             'shortCode' => [$req, 'string'],
             'displayName' => [$req, 'string'],
             'measurementCategoryId' => [$req, 'string'],
-            'baseUnitId' => ['sometimes', 'nullable', 'string'],
-            'conversionFactor' => ['sometimes', 'nullable', 'numeric', 'gt:0'],
+            // A unit is either a base unit (both fields empty) or converts to
+            // one (both fields set) — never just one of the two, otherwise a
+            // conversion_factor with no base, or a base with no factor, would
+            // silently corrupt any future conversion using this row.
+            'baseUnitId' => ['sometimes', 'nullable', 'string', 'required_with:conversionFactor'],
+            'conversionFactor' => ['sometimes', 'nullable', 'numeric', 'gt:0', 'required_with:baseUnitId'],
             'active' => ['sometimes', 'boolean'],
         ];
     }
