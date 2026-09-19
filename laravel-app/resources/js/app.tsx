@@ -66,7 +66,16 @@ function Gate() {
 
 const el = document.getElementById("app");
 if (el) {
-  createRoot(el).render(
+  // Vite's dev server re-executes this module on every hot reload — without
+  // reusing the root across those re-runs, each one calls createRoot() again
+  // on the same container without clearing the previous render, stacking
+  // duplicate copies of the whole app on the page. import.meta.hot.data
+  // survives HMR updates, so the root (and its DOM) gets reused instead.
+  const root = import.meta.hot?.data.root ?? createRoot(el);
+  if (import.meta.hot) {
+    import.meta.hot.data.root = root;
+  }
+  root.render(
     <StrictMode>
       <Root />
     </StrictMode>,
